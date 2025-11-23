@@ -21,10 +21,9 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="no-referrer">
-
-    <title>Horarios</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <title>Horarios</title>
     <style>
         * {
             margin: 0;
@@ -774,7 +773,7 @@
         .time-btn:disabled {
             background: transparent;
             color: #6b7280;
-            opacity: 1;
+            transform: none;
         }
 
         .time-btn:active {
@@ -789,14 +788,37 @@
             transform: none;
         }
 
-        .time-btn.filtro-activo {
-            background: #5382e6;
+        .filter-btn.filtro-activo {
+            background: transparent;
+            color: #c05d76;
+        }
+
+        body.dark-mode .filter-btn.filtro-activo {
+            background: transparent;
+            color: #c05d76;
+        }
+
+        .filter-btn {
+            background: transparent;
+            color: #0f172a;
+            width: 50px;
+            height: 50px;
+            padding: 0.5rem;
+        }
+
+        body.dark-mode .filter-btn {
             color: white;
         }
 
-        body.dark-mode .time-btn.filtro-activo {
-            background: #5382e6;
-            color: white;
+        .contenedor-fechas {
+            display: flex;
+            gap: 10px;
+        }
+
+        .contenedor-fechas .form-group {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
         }
     </style>
 </head>
@@ -1013,7 +1035,7 @@
                         </svg> Histórico
                     </h2>
                     <div style="display: flex; gap: 0.5rem;">
-                        <button class="time-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
+                        <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
                             <svg class="icon">
                                 <use href="#icon-filter" />
                             </svg>
@@ -1046,7 +1068,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.64</span> <!-- Version -->
+                <span class="version-text">v5.65</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1198,13 +1220,15 @@
                     Filtrar Histórico
                 </span>
             </h3>
-            <div class="form-group">
-                <label>Fecha desde</label>
-                <input type="date" id="filtro-fecha-desde" />
-            </div>
-            <div class="form-group">
-                <label>Fecha hasta</label>
-                <input type="date" id="filtro-fecha-hasta" />
+            <div class="contenedor-fechas">
+                <div class="form-group">
+                    <label>Fecha desde</label>
+                    <input type="date" id="filtro-fecha-desde" />
+                </div>
+                <div class="form-group">
+                    <label>Fecha hasta</label>
+                    <input type="date" id="filtro-fecha-hasta" />
+                </div>
             </div>
             <div class="btn-group">
                 <button class="btn-edit" onclick="DataManagement.aplicarFiltros()">
@@ -1221,6 +1245,31 @@
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarFiltros()">
                     Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-confirmacion" style="z-index: 200;">
+        <div class="modal-content">
+            <h3 id="confirm-titulo">
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg>
+                    Confirmar
+                </span>
+            </h3>
+            <p id="confirm-mensaje" style="margin-bottom: 1.5rem; color: #4b5563; line-height: 1.5;"></p>
+            <div class="btn-group">
+                <button id="btn-confirm-yes" class="btn-delete">
+                    <svg class="icon">
+                        <use href="#icon-check" />
+                    </svg> Sí, confirmar
+                </button>
+                <button class="btn-cancel" onclick="UILogic.cerrarConfirmacion()">
+                    <svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Cancelar
                 </button>
             </div>
         </div>
