@@ -258,7 +258,7 @@
         button:hover {
             transform: scale(1.02);
         }
-        
+
         button:active {
             transform: scale(1);
         }
@@ -679,6 +679,11 @@
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" class="icon-line" stroke="currentColor">
             </polygon>
         </symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10" class="icon-line" stroke="currentColor"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" class="icon-line" stroke="currentColor"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17" class="icon-line" stroke-width="3" stroke="currentColor"></line>
+        </symbol>
     </svg>
 
     <div class="header">
@@ -689,6 +694,11 @@
             <button class="icon-btn" id="theme-toggle" onclick="UILogic.alternarTema()">
                 <svg class="icon">
                     <use href="#icon-moon" />
+                </svg>
+            </button>
+            <button class="icon-btn" onclick="UILogic.mostrarAyuda()">
+                <svg class="icon">
+                    <use href="#icon-help" />
                 </svg>
             </button>
             <button class="icon-btn" onclick="UILogic.mostrarConfig()">
@@ -804,7 +814,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.73</span> <!-- Version -->
+                <span class="version-text">v5.74</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -979,6 +989,45 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarFiltros()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-ayuda">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-help" />
+                    </svg>
+                    Instrucciones
+                </span>
+            </h3>
+            <div
+                style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">
+                <p><strong><svg class="icon">
+                            <use href="#icon-save" />
+                        </svg> Registrar Horas:</strong> Podes ingresar una hora de entrada y registrar, y luego mas tarde
+                        podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro en el
+                        historico.</p>
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+                <p><strong>🥳 Feriados:</strong> Ingresa <code>00:00</code> en Entrada y Salida.</p>
+                <p><strong>✈️ Ausencias/Licencias:</strong> Ingresa <code>11:11</code> en Entrada y Salida (no cuentan
+                    para el promedio).</p>
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+                <p><strong>☕ Tiempo Fuera:</strong> Para descontar tiempo del dia, si saliste por algun motivo,
+                    (por ejemplo, irse al medico).</p>
+                <p><strong><svg class="icon">
+                        <use href="#icon-clock" />
+                    </svg> Vistas:</strong> Toca la tarjeta de "Hoy" para ver el progreso de la "Semana".</p>
+                <p><strong><svg class="icon"><use href="#icon-save" /></svg> Datos:</strong> 
+                    La configuracion y registro de la pagina usa localStorage, lo que guarda los
+                    datos de forma local en el navegador, Usa "Exportar" en Configuración para hacer
+                    copias de seguridad e importar para combinar o reemplazar los registros.</p>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
                     Cerrar
                 </button>
             </div>
@@ -2603,7 +2652,8 @@
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros, cerrarFiltros
+                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -2630,12 +2680,21 @@
                     $('modal-filtros').classList.remove('show');
                 }
 
+                function mostrarAyuda() {
+                    $('modal-ayuda').classList.add('show');
+                }
+
+                function cerrarAyuda() {
+                    $('modal-ayuda').classList.remove('show');
+                }
+
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                    incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros,
+                    incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
+                    cerrarAyuda
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -2661,8 +2720,8 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.73
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.74
     // ====================================================================
-    1) agregado salto con tecla enter de entrada >> salida >> registrar
-    2) se agrega scale(1) a registro-item:active
+    1) Agregado boton de ayuda en el header, con informacion e instrucciones 
+    de uso
     -->
