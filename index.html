@@ -224,7 +224,7 @@
         }
 
         button:active {
-            transform: translateY(0);
+            transform: scale(1);
         }
 
         button:disabled {
@@ -242,10 +242,6 @@
 
         .stats-card:hover {
             transform: scale(1.02);
-        }
-
-        .stats-card:active {
-            transform: translateX(2px);
         }
 
         .stats-card h2 {
@@ -266,11 +262,16 @@
         .progress-bar {
             width: 100%;
             height: 24px;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(224, 224, 224, 0.363);
             border-radius: 12px;
             overflow: hidden;
             margin: 0.5rem 0;
         }
+
+        body.dark-mode .progress-bar {
+             background: rgba(255, 255, 255, 0.2);
+        }
+
 
         .progress-fill {
             height: 100%;
@@ -312,7 +313,7 @@
         }
 
         .registro-item:active {
-            transform: translateX(2px);
+            transform: scale(1);
         }
 
         .registro-info {
@@ -359,6 +360,10 @@
             transform: scale(1.02);
         }
 
+        .btn-delete:active {
+            transform: scale(1);
+        }
+
         .btn-export {
             background: #50917d;
         }
@@ -367,12 +372,20 @@
             transform: scale(1.02);
         }
 
+        .btn-export:active {
+            transform: scale(1);
+        }
+
         .btn-backup {
             background: #5382e6;
         }
 
         .btn-backup:hover {
             transform: scale(1.02);
+        }
+
+        .btn-backup:active {
+            transform: scale(1);
         }
 
         .empty-state {
@@ -443,7 +456,7 @@
         }
 
         body.dark-mode .registro-item {
-            border-color: #4b5563;
+            border-color: #374151;
             background: #374151;
         }
 
@@ -518,10 +531,6 @@
             background: #cbd5e1;
         }
 
-        .btn-increment:active {
-            transform: scale(0.95);
-        }
-
         body.dark-mode .btn-increment {
             background: #4b5563;
         }
@@ -585,6 +594,10 @@
             transform: scale(1.02);
         }
 
+        .btn-cancel:active {
+            transform: scale(1);
+        }
+
         .btn-edit {
             background: #5382e6;
         }
@@ -593,6 +606,9 @@
             transform: scale(1.02);
         }
 
+        .btn-edit:active {
+            transform: scale(1);
+        }
 
         .actions-row {
             display: flex;
@@ -828,6 +844,7 @@
         .registro-total.purple-text {
             color: #8b5cf6;
         }
+
     </style>
 </head>
 
@@ -1078,7 +1095,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.69</span> <!-- Version -->
+                <span class="version-text">v5.70</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -2429,7 +2446,7 @@
 
                 function setProgressBarColor(progressEl, status) {
                     if (!progressEl) return;
-                    progressEl.classList.remove('blue', 'green', 'red');
+                    progressEl.className = 'progress-fill';
                     progressEl.classList.add(status);
                 }
                 // REEMPLAZAR TODA LA FUNCIÓN actualizarListaRegistros POR ESTA:
@@ -2622,7 +2639,7 @@
                             } else if (esDiaDeDescanso) {
                                 // Mensaje de resumen (fin de jornada laboral semanal)
                                 mensajeEl.textContent = tot >= objetivoAjustado ?
-                                    `Terminaste con ${horasATexto(tot - objetivoAjustado)} demás` :
+                                    `Hiciste ${horasATexto(tot - objetivoAjustado)} demás` :
                                     `Faltaron ${horasATexto(objetivoAjustado - tot)}`;
                             } else {
                                 // Mensaje activo (aún en jornada laboral)
@@ -2914,12 +2931,9 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.69
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.70
     // ====================================================================
-    - 1) Cambiadas las etiquetas "fecha desde" y "fecha hasta" por "Desde" 
-    y "Hasta" en los campos para filtrar por fecha
-    - 2) Cambiadas las etiquetas "hora de entrada" y "hora de salida" por
-    "Entrada" y "Salida"
-    - 3) cambios de color en la barra de progreso por ausencia y feriado
-    (progressel)
--->
+    1) corregido bug en barra de progreso, al registrar un feriado o ausencia,
+    no se actualizaba el color de la barra de progreso
+    2) se realizan cambios de estilo en el :hover y :active, de botones
+    -->
