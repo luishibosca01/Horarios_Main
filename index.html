@@ -25,6 +25,43 @@
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <title>Horarios</title>
     <style>
+        :root {
+            /* --- Variables de Color (Tema Claro por defecto) --- */
+            --bg-body: #f9fafb;
+            --bg-card: #ffffff;
+            --bg-header: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --text-inv: #ffffff;
+            --border: #e5e7eb;
+            --input-bg: #ffffff;
+            --input-focus: #272450;
+            --c-blue: #5382e6;
+            --c-green: #60ac94;
+            --c-red: #c05d76;
+            --c-purple: #8b5cf6;
+            --c-gold: #d6af66;
+            --c-gray-btn: #4b5563;
+            --c-gray-light: #cbd5e1;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+
+        body.dark-mode {
+            /* --- Redefinición para Tema Oscuro --- */
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --bg-header: #1f2937;
+            --text-main: #f9fafb;
+            --text-muted: #d1d5db;
+            --border: #374151;
+            --input-bg: #374151;
+            --input-focus: #4b5563;
+            --c-gray-btn: #4b5563;
+            /* Botones desactivados/neutros en dark */
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -33,29 +70,23 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            background: #f9fafb;
+            background: var(--bg-body);
+            color: var(--text-main);
             overflow-anchor: none;
+            transition: background 0.3s, color 0.3s;
         }
 
-        /* --- ESTILOS DE ICONOS SVG --- */
-        .icon {
-            width: 1.2em;
-            height: 1.2em;
-            vertical-align: text-bottom;
-            fill: currentColor;
-            stroke: currentColor;
-            stroke-width: 0;
-        }
-
-        .icon-line {
-            stroke-width: 2;
-            fill: none;
+        /* --- Layout & Contenedores --- */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
         }
 
         .header {
-            background: white;
+            background: var(--bg-header);
             padding: 0.3rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -66,16 +97,30 @@
 
         .header h1 {
             font-size: 1.25rem;
-            color: #1f2937;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 1rem;
+        .card,
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            color: var(--text-main);
+        }
+
+        .card h2,
+        .modal h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-main);
         }
 
         @media (min-width: 1024px) {
@@ -94,65 +139,51 @@
 
             .right-column {
                 position: sticky;
-                top: calc(3.5rem + 1rem);
+                top: 4.5rem;
             }
 
             #lista-registros {
                 max-height: 550px;
                 overflow-y: auto;
-                overflow-x: hidden;
-                padding-right: 0.5rem;
                 padding: 0.5rem;
             }
 
+            /* Scrollbar Personalizado */
             #lista-registros::-webkit-scrollbar {
                 width: 8px;
             }
 
             #lista-registros::-webkit-scrollbar-track {
-                background: #f1f5f9;
+                background: var(--bg-body);
                 border-radius: 4px;
             }
 
             #lista-registros::-webkit-scrollbar-thumb {
-                background: #cbd5e1;
+                background: var(--border);
                 border-radius: 4px;
             }
 
             #lista-registros::-webkit-scrollbar-thumb:hover {
-                background: #94a3b8;
-            }
-
-            body.dark-mode #lista-registros::-webkit-scrollbar-track {
-                background: #1e293b;
-            }
-
-            body.dark-mode #lista-registros::-webkit-scrollbar-thumb {
-                background: #475569;
-            }
-
-            body.dark-mode #lista-registros::-webkit-scrollbar-thumb:hover {
-                background: #64748b;
+                background: var(--text-muted);
             }
         }
 
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        /* --- Iconos --- */
+        .icon {
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: text-bottom;
+            fill: currentColor;
+            stroke: currentColor;
+            stroke-width: 0;
         }
 
-        .card h2 {
-            font-size: 1rem;
-            margin-bottom: 1rem;
-            color: #1f2937;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .icon-line {
+            stroke-width: 2;
+            fill: none;
         }
 
+        /* --- Formularios --- */
         .form-group {
             margin-bottom: 1rem;
         }
@@ -161,62 +192,68 @@
             display: block;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #4b5563;
+            color: var(--text-muted);
             margin-bottom: 0.25rem;
         }
 
         input {
             width: 100%;
             padding: 0.75rem;
-            border: 2px solid #e5e7eb;
+            border: 2px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
+            background: var(--input-bg);
+            color: var(--text-main);
         }
 
         input:focus {
             outline: none;
-            border-color: #272450;
+            border-color: var(--input-focus);
         }
 
         input.error {
-            border-color: #c05d76;
-        }
-
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        input[type="number"] {
-            -moz-appearance: textfield;
-            appearance: textfield;
+            border-color: var(--c-red);
         }
 
         .input-error {
-            color: #c05d76;
+            color: var(--c-red);
             font-size: 0.75rem;
             margin-top: 0.25rem;
             display: none;
         }
 
+        .input-with-btn,
+        .input-number-group,
+        .contenedor-fechas {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .input-number-group input {
+            text-align: center;
+        }
+
+        .contenedor-fechas .form-group {
+            flex-grow: 1;
+        }
+
+        /* --- Botones --- */
         button {
             width: 100%;
             padding: 0.875rem;
-            background: #4b5563;
-            color: white;
             border: none;
             border-radius: 8px;
             font-weight: 600;
             font-size: 1rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.2s, background 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            color: white;
+            background: var(--c-gray-btn);
         }
 
         button:hover {
@@ -228,30 +265,104 @@
         }
 
         button:disabled {
-            background: #94a3b8;
+            background: transparent;
             cursor: not-allowed;
             transform: none;
+            color: #6b7280;
         }
 
+        /* Variantes de botones */
+        .btn-delete {
+            background: var(--c-red);
+        }
+
+        .btn-export {
+            background: var(--c-green);
+        }
+
+        .btn-backup,
+        .btn-edit {
+            background: var(--c-blue);
+        }
+
+        .btn-cancel {
+            background: #4b5563;
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .icon-btn,
+        .time-btn,
+        .btn-increment,
+        .filter-btn {
+            width: auto;
+            padding: 0.5rem;
+            min-width: 44px;
+            height: 44px;
+            /* Unificado altura */
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .icon-btn:hover,
+        .time-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .time-btn,
+        .btn-increment {
+            background: var(--border);
+            border: none;
+            font-size: 1.25rem;
+            width: 50px;
+            height: auto;
+        }
+
+        .filter-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+
+        .filter-btn.filtro-activo {
+            color: var(--c-red);
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-group,
+        .actions-row,
+        .export-import-stack {
+            /* --- este ultimo en desuso --- */
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .config-actions {
+            margin-top: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* --- Stats & Progreso --- */
         .stats-card {
-            background: #fefeff;
-            color: rgb(0, 0, 0);
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s;
         }
 
         .stats-card:hover {
             transform: scale(1.02);
         }
-
-        .stats-card h2 {
-            color: rgb(0, 0, 0);
-        }
-
-        body.dark-mode .stats-card h2 {
-            color: white;
-        }
-
 
         .stats-number {
             font-size: 1.8rem;
@@ -262,42 +373,48 @@
         .progress-bar {
             width: 100%;
             height: 24px;
-            background: rgba(224, 224, 224, 0.363);
+            background: rgba(224, 224, 224, 0.3);
             border-radius: 12px;
             overflow: hidden;
             margin: 0.5rem 0;
         }
 
         body.dark-mode .progress-bar {
-             background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.2);
         }
-
 
         .progress-fill {
             height: 100%;
-            background: white;
-            border-radius: 12px;
+            background: var(--bg-card);
             transition: width 0.5s;
         }
 
         .progress-fill.blue {
-            background: #5382e6 !important;
+            background: var(--c-blue) !important;
         }
 
         .progress-fill.green {
-            background: #60ac94 !important;
+            background: var(--c-green) !important;
         }
 
         .progress-fill.red {
-            background: #c05d76 !important;
+            background: var(--c-red) !important;
         }
 
         .progress-fill.purple {
-            background: #8b5cf6 !important;
+            background: var(--c-purple) !important;
+        }
+
+        /* --- Lista de Registros --- */
+        .registro-grupo-titulo {
+            margin: 1rem;
+            color: var(--text-muted);
+            font-size: 18px;
+            text-align: center;
         }
 
         .registro-item {
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem;
             margin-bottom: 0.5rem;
@@ -305,15 +422,16 @@
             justify-content: space-between;
             align-items: start;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
+            background: var(--input-bg);
         }
 
         .registro-item:hover {
             transform: scale(1.02);
         }
 
-        .registro-item:active {
-            transform: scale(1);
+        .registro-item.hoy {
+            border-left: 5px solid var(--text-main);
         }
 
         .registro-info {
@@ -322,223 +440,35 @@
 
         .registro-fecha {
             font-weight: 600;
-            color: #1f2937;
             margin-bottom: 0.25rem;
+            color: var(--text-main);
         }
 
         .registro-horas {
             font-size: 0.875rem;
-            color: #6b7280;
+            color: var(--text-muted);
         }
 
         .registro-total {
             font-size: 0.875rem;
             font-weight: 600;
-            color: #d6af66;
+            color: var(--c-gold);
             margin-top: 0.25rem;
         }
 
         .registro-total.green-text {
-            color: #60ac94;
+            color: var(--c-green);
         }
 
         .registro-total.red-text {
-            color: #c05d76;
+            color: var(--c-red);
         }
 
-        .btn-small {
-            width: auto;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+        .registro-total.purple-text {
+            color: var(--c-purple);
         }
 
-        .btn-delete {
-            background: #c04d6a;
-        }
-
-        .btn-delete:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-delete:active {
-            transform: scale(1);
-        }
-
-        .btn-export {
-            background: #50917d;
-        }
-
-        .btn-export:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-export:active {
-            transform: scale(1);
-        }
-
-        .btn-backup {
-            background: #5382e6;
-        }
-
-        .btn-backup:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-backup:active {
-            transform: scale(1);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #9ca3af;
-        }
-
-        .header-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .icon-btn {
-            width: auto;
-            padding: 0.5rem;
-            font-size: 1.25rem;
-            min-width: 44px;
-            background: transparent;
-            color: #334155;
-            border: 1px solid #e2e8f0;
-        }
-
-        .icon-btn:hover {
-            transform: scale(1.02);
-        }
-
-        .registro-item.hoy {
-            border-left: 5px solid #374151;
-        }
-
-        body.dark-mode .registro-item.hoy {
-            border-left-color: #ffffff;
-        }
-
-        body.dark-mode {
-            background: #111827;
-            color: #f9fafb;
-        }
-
-        body.dark-mode .header {
-            background: #1f2937;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-
-        body.dark-mode .header h1 {
-            color: #f9fafb;
-        }
-
-        body.dark-mode .card {
-            background: #1f2937;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-            color: white;
-        }
-
-        body.dark-mode .card h2 {
-            color: #f9fafb;
-        }
-
-        body.dark-mode label {
-            color: #d1d5db;
-        }
-
-        body.dark-mode input {
-            background: #374151;
-            border-color: #4b5563;
-            color: #f9fafb;
-        }
-
-        body.dark-mode .registro-item {
-            border-color: #374151;
-            background: #374151;
-        }
-
-        body.dark-mode .registro-fecha {
-            color: #f9fafb;
-        }
-
-        body.dark-mode .registro-horas {
-            color: #d1d5db;
-        }
-
-        body.dark-mode .modal-content {
-            background: #1f2937;
-        }
-
-        body.dark-mode .modal h3 {
-            color: #f9fafb;
-        }
-
-        body.dark-mode .icon-btn {
-            color: #f1f5f9;
-            border-color: #4b5563;
-        }
-
-        .time-btn {
-            width: 50px;
-            height: 50px;
-            padding: 0.5rem;
-            font-size: 1.25rem;
-            background: #cbd5e1;
-            color: #0f172a;
-        }
-
-        .time-btn:hover {
-            transform: scale(1.02);
-        }
-
-        body.dark-mode .time-btn {
-            background: #4b5563;
-            color: white;
-        }
-
-        .input-with-btn {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .input-with-btn input {
-            flex: 1;
-        }
-
-        .input-number-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .input-number-group input {
-            flex: 1;
-            text-align: center;
-        }
-
-        .btn-increment {
-            width: 50px;
-            height: 50px;
-            padding: 0.25rem;
-            font-size: 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #cbd5e1;
-        }
-
-        body.dark-mode .btn-increment {
-            background: #4b5563;
-        }
-
-        body.dark-mode .btn-increment:hover {
-            transform: scale(1.02);
-        }
-
+        /* --- Modal & Utilidades --- */
         .modal {
             display: flex;
             visibility: hidden;
@@ -554,8 +484,8 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            backdrop-filter: blur(1px);
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            backdrop-filter: blur(2px);
+            transition: all 0.3s;
         }
 
         .modal.show {
@@ -565,60 +495,14 @@
         }
 
         .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 1rem;
             max-width: 450px;
             width: 100%;
         }
 
-        .modal h3 {
-            margin-bottom: 1rem;
-            color: #1f2937;
+        .modal-title-block {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-        }
-
-        .btn-group {
-            display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .btn-cancel {
-            background: #64748b;
-        }
-
-        .btn-cancel:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-cancel:active {
-            transform: scale(1);
-        }
-
-        .btn-edit {
-            background: #5382e6;
-        }
-
-        .btn-edit:hover {
-            transform: scale(1.02);
-        }
-
-        .btn-edit:active {
-            transform: scale(1);
-        }
-
-        .actions-row {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .actions-row .btn-small {
-            flex: 1;
-            min-width: auto;
         }
 
         .toast {
@@ -632,9 +516,8 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             opacity: 0;
             transform: translateY(100px);
-            transition: all 0.3s ease;
+            transition: all 0.3s;
             z-index: 1000;
-            max-width: 300px;
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -643,32 +526,31 @@
         .toast.show {
             opacity: 1;
             transform: translateY(0);
-            animation: toastSlide 0.3s ease;
         }
 
-        @keyframes toastSlide {
-            0% {
-                transform: translateY(100px) scale(0.8);
-                opacity: 0;
-            }
-
-            100% {
-                transform: translateY(0) scale(1);
-                opacity: 1;
-            }
+        .toast.success {
+            background: var(--c-green);
         }
 
+        .toast.error,
+        .toast.warning {
+            background: var(--c-red);
+        }
+
+        .toast.info {
+            background: var(--c-blue);
+        }
+
+        /* --- Animaciones y Textos --- */
         @keyframes zoomIn {
             from {
                 opacity: 0;
                 transform: scale(0.8);
-                /* Empieza al 80% del tamaño */
             }
 
             to {
                 opacity: 1;
                 transform: scale(1);
-                /* Termina al 100% del tamaño */
             }
         }
 
@@ -676,175 +558,21 @@
             animation: zoomIn 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
         }
 
-        .toast.success {
-            background: #60ac94;
-        }
-
-        .toast.error {
-            background: #c05d76;
-        }
-
-        .toast.warning {
-            background: #c05d76;
-        }
-
-        .toast.info {
-            background: #5382e6;
-        }
-
-        .toast::before {
-            content: '';
-            font-size: 1.5rem;
-        }
-
-        .toast.success::before {
-            content: '✓';
-        }
-
-        .toast.error::before {
-            content: '✕';
-        }
-
-        .toast.warning::before {
-            content: '⚠';
-        }
-
-        .toast.info::before {
-            content: 'ℹ';
-        }
-
-        .toggle-hint {
-            display: block;
-            margin-top: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 400;
-            color: rgba(0, 0, 0, 0.7);
-            text-align: right;
-        }
-
-        body.dark-mode .toggle-hint {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .registro-grupo-titulo {
-            margin: 1rem;
-            color: #494949;
-            font-size: 18px;
-            text-align: center;
-        }
-
-        body.dark-mode .registro-grupo-titulo {
-            color: #ffffff;
-        }
-
-        .config-hint-text {
-            font-size: 0.8rem;
-            color: #6b7280;
-            margin-top: 0.25rem;
-            text-align: right;
-        }
-
-        body.dark-mode .config-hint-text {
-            color: #9ca3af;
-        }
-
-        .config-actions {
-            margin-top: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            align-items: stretch;
-        }
-
-        .export-import-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .export-import-stack button {
-            flex: 1;
-            width: 100%;
-        }
-
-        .large-btn-config {
-            grid-row-start: 1;
-            grid-row-end: span 2;
-            align-self: stretch;
-            height: 100%;
-        }
-
-        .modal-title-block {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
+        .toggle-hint,
+        .config-hint-text,
         .version-text {
             font-size: 0.8rem;
-            color: #9ca3af;
-            font-weight: 400;
+            color: var(--text-muted);
+            text-align: right;
+            display: block;
+            margin-top: 0.25rem;
         }
 
-        body.dark-mode .version-text {
-            color: #6b7280;
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-muted);
         }
-
-        .time-btn:disabled {
-            background: transparent;
-            color: #6b7280;
-            transform: none;
-        }
-
-        .time-btn:active {
-            background: transparent;
-            color: #6b7280;
-            opacity: 1;
-        }
-
-        body.dark-mode .time-btn:disabled {
-            background: transparent;
-            color: #6b7280;
-            transform: none;
-        }
-
-        .filter-btn.filtro-activo {
-            background: transparent;
-            color: #c05d76;
-        }
-
-        body.dark-mode .filter-btn.filtro-activo {
-            background: transparent;
-            color: #c05d76;
-        }
-
-        .filter-btn {
-            background: transparent;
-            color: #0f172a;
-            width: 50px;
-            height: 50px;
-            padding: 0.5rem;
-        }
-
-        body.dark-mode .filter-btn {
-            color: white;
-        }
-
-        .contenedor-fechas {
-            display: flex;
-            gap: 10px;
-        }
-
-        .contenedor-fechas .form-group {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .registro-total.purple-text {
-            color: #8b5cf6;
-        }
-
     </style>
 </head>
 
@@ -1095,7 +823,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.70</span> <!-- Version -->
+                <span class="version-text">v5.71</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1115,14 +843,12 @@
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
             <div class="config-actions">
-                <div class="export-import-stack">
-                    <button class="btn-export" onclick="DataManagement.exportarJSON()"><svg class="icon">
-                            <use href="#icon-download" />
-                        </svg> Exportar</button>
-                    <button class="btn-backup" onclick="UILogic.mostrarImportar()"><svg class="icon">
-                            <use href="#icon-upload" />
-                        </svg> Importar</button>
-                </div>
+                <button class="btn-export" onclick="DataManagement.exportarJSON()"><svg class="icon">
+                        <use href="#icon-download" />
+                    </svg> Exportar</button>
+                <button class="btn-backup" onclick="UILogic.mostrarImportar()"><svg class="icon">
+                        <use href="#icon-upload" />
+                    </svg> Importar</button>
                 <button class="btn-delete" onclick="DataManagement.borrarTodoHistorial()"><svg class="icon">
                         <use href="#icon-trash" />
                     </svg>Borrar registros</button>
@@ -1508,7 +1234,6 @@
                     updateButtons();
                 }
 
-                // ✅ NUEVO: Método para debug
                 function getDebugInfo() {
                     return {
                         historyLength: history.length,
@@ -2931,9 +2656,7 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.70
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.71
     // ====================================================================
-    1) corregido bug en barra de progreso, al registrar un feriado o ausencia,
-    no se actualizaba el color de la barra de progreso
-    2) se realizan cambios de estilo en el :hover y :active, de botones
+    1) Se simplificó el css completo, reduciendo la cantidad de lineas de codigo
     -->
