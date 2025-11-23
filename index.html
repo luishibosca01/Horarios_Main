@@ -996,7 +996,8 @@
                 <div class="form-group">
                     <label>Hora de Entrada</label>
                     <div class="input-with-btn">
-                        <input type="text" id="entrada" placeholder="00:00 para Feriado" maxlength="5" />
+                        <input type="text" id="entrada" inputmode="numeric" placeholder="00:00 para Feriado"
+                            maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -1009,7 +1010,8 @@
                 <div class="form-group">
                     <label>Hora de Salida</label>
                     <div class="input-with-btn">
-                        <input type="text" id="salida" placeholder="00:00 para Feriado" maxlength="5" />
+                        <input type="text" id="salida" inputmode="numeric" placeholder="00:00 para Feriado"
+                            maxlength="5" />
                         <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
                                 <use href="#icon-clock" />
                             </svg></button>
@@ -1068,7 +1070,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.65</span> <!-- Version -->
+                <span class="version-text">v5.66</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1127,7 +1129,7 @@
             <div class="form-group">
                 <label>Entrada</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-entrada" placeholder="HH:MM" maxlength="5" />
+                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="HH:MM" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -1139,7 +1141,7 @@
             <div class="form-group">
                 <label>Salida</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-salida" placeholder="HH:MM" maxlength="5" />
+                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="HH:MM" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
@@ -1151,7 +1153,8 @@
             <div class="form-group">
                 <label>Tiempo Fuera (opcional)</label>
                 <div class="input-with-btn">
-                    <input type="text" id="edit-tiempo-fuera" placeholder="Ej: 00:20" maxlength="5" />
+                    <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
+                        maxlength="5" />
                     <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')"><svg class="icon">
                             <use href="#icon-broom" />
                         </svg></button>
@@ -1245,31 +1248,6 @@
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarFiltros()">
                     Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="modal-confirmacion" style="z-index: 200;">
-        <div class="modal-content">
-            <h3 id="confirm-titulo">
-                <span class="modal-title-block">
-                    <svg class="icon">
-                        <use href="#icon-trash" />
-                    </svg>
-                    Confirmar
-                </span>
-            </h3>
-            <p id="confirm-mensaje" style="margin-bottom: 1.5rem; color: #4b5563; line-height: 1.5;"></p>
-            <div class="btn-group">
-                <button id="btn-confirm-yes" class="btn-delete">
-                    <svg class="icon">
-                        <use href="#icon-check" />
-                    </svg> Sí, confirmar
-                </button>
-                <button class="btn-cancel" onclick="UILogic.cerrarConfirmacion()">
-                    <svg class="icon">
-                        <use href="#icon-cancelar" />
-                    </svg> Cancelar
                 </button>
             </div>
         </div>
