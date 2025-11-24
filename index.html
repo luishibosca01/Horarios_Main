@@ -142,7 +142,7 @@
             }
 
             #lista-registros {
-                max-height: 550px;
+                max-height: 650px;
                 overflow-y: auto;
                 padding: 0.5rem;
             }
@@ -754,7 +754,6 @@
                 <div id="stats-buffer" style="font-size: 0.85rem; margin-top: 0.5rem; min-height: 1.2rem;"></div>
                 <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
             </div>
-
             <div class="card animated-card" style="animation-delay: 0.1s;">
                 <h2><svg class="icon">
                         <use href="#icon-edit" />
@@ -794,6 +793,15 @@
                         <use href="#icon-save" />
                     </svg> Registrar</button>
             </div>
+            <div class="card stats-card animated-card"
+                style="animation-delay: 0.3s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
+                <h2 style="margin: 0; justify-content: center">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg>
+                    Ver Estadísticas del Mes
+                </h2>
+            </div>
         </div>
 
         <div class="right-column">
@@ -827,31 +835,6 @@
                 <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
                     onclick="DataManagement.cargarMasRegistros()"></button>
             </div>
-            <div class="card animated-card" style="animation-delay: 0.3s;">
-                <h2>
-                    <svg class="icon">
-                        <use href="#icon-list" />
-                    </svg> Estadísticas del Mes
-                </h2>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">Días trabajados</div>
-                        <div class="stat-value" id="stat-dias-trabajados">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Entrada promedio</div>
-                        <div class="stat-value" id="stat-entrada-promedio">--:--</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Salida promedio</div>
-                        <div class="stat-value" id="stat-salida-promedio">--:--</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Promedio diario</div>
-                        <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -864,7 +847,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.75</span> <!-- Version -->
+                <span class="version-text">v5.77</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1083,6 +1066,43 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="modal" id="modal-stats">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg>
+                    Estadísticas del Mes
+                </span>
+            </h3>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Días trabajados</div>
+                    <div class="stat-value" id="stat-dias-trabajados">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Entrada promedio</div>
+                    <div class="stat-value" id="stat-entrada-promedio">--:--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Salida promedio</div>
+                    <div class="stat-value" id="stat-salida-promedio">--:--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Promedio diario</div>
+                    <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
+                </div>
+            </div>
+
+            <div class="btn-group" style="margin-top: 1.5rem;">
+                <button class="btn-cancel" onclick="UILogic.cerrarStats()">
                     Cerrar
                 </button>
             </div>
@@ -2783,6 +2803,16 @@
                     $('modal-importar').classList.remove('show');
                 }
 
+                function mostrarStats() {
+                    // Nos aseguramos que los datos estén frescos al abrir
+                    actualizarEstadisticas();
+                    $('modal-stats').classList.add('show');
+                }
+
+                function cerrarStats() {
+                    $('modal-stats').classList.remove('show');
+                }
+
                 function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -2853,7 +2883,7 @@
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
-                        cerrarFiltros, mostrarAyuda, cerrarAyuda
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, mostrarStats, cerrarStats,
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -2920,7 +2950,7 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.76
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.77
     // ====================================================================
-    1) Nueva tarjeta de estadisticas
+    1) Modificaciones en la tarjeta estadisticas
     -->
