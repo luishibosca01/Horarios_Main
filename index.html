@@ -576,6 +576,38 @@
             padding: 3rem 1rem;
             color: var(--text-muted);
         }
+
+        /* --- Estadísticas Grid --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--input-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -799,6 +831,31 @@
                 <div id="lista-registros"></div>
                 <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
                     onclick="DataManagement.cargarMasRegistros()"></button>
+            </div>
+            <div class="card animated-card" style="animation-delay: 0.3s;">
+                <h2>
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg> Estadísticas del Mes
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Entrada promedio</div>
+                        <div class="stat-value" id="stat-entrada-promedio">--:--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Salida promedio</div>
+                        <div class="stat-value" id="stat-salida-promedio">--:--</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Días trabajados</div>
+                        <div class="stat-value" id="stat-dias-trabajados">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Promedio diario</div>
+                        <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2275,7 +2332,6 @@
                     progressEl.className = 'progress-fill';
                     progressEl.classList.add(status);
                 }
-                // REEMPLAZAR TODA LA FUNCIÓN actualizarListaRegistros POR ESTA:
                 function actualizarListaRegistros(registros) {
                     const lista = $('lista-registros');
                     const btnCargarMas = $('btn-cargar-mas');
@@ -2379,6 +2435,79 @@
                         });
                     });
                     lista.appendChild(fragmento);
+                }
+
+                function calcularEstadisticasMes() {
+                    const hoy = new Date();
+                    const mesActual = hoy.getMonth();
+                    const añoActual = hoy.getFullYear();
+
+                    const registrosMes = D.registros().filter(r => {
+                        const [año, mes] = r.fecha.split('-').map(Number);
+                        return año === añoActual && mes === mesActual + 1;
+                    });
+
+                    // Filtrar solo registros válidos (excluir feriados y ausencias)
+                    const registrosValidos = registrosMes.filter(r =>
+                        r.entrada && r.salida &&
+                        r.entrada !== '00:00' && r.entrada !== '11:11'
+                    );
+
+                    if (registrosValidos.length === 0) {
+                        return {
+                            entradaPromedio: '--:--',
+                            salidaPromedio: '--:--',
+                            diasTrabajados: 0,
+                            promedioDiario: '0h 0m'
+                        };
+                    }
+
+                    // Calcular entrada promedio
+                    let sumaMinutosEntrada = 0;
+                    registrosValidos.forEach(r => {
+                        const [h, m] = r.entrada.split(':').map(Number);
+                        sumaMinutosEntrada += h * 60 + m;
+                    });
+                    const promedioEntrada = Math.round(sumaMinutosEntrada / registrosValidos.length);
+                    const hEntrada = Math.floor(promedioEntrada / 60);
+                    const mEntrada = promedioEntrada % 60;
+
+                    // Calcular salida promedio
+                    let sumaMinutosSalida = 0;
+                    registrosValidos.forEach(r => {
+                        const [h, m] = r.salida.split(':').map(Number);
+                        sumaMinutosSalida += h * 60 + m;
+                    });
+                    const promedioSalida = Math.round(sumaMinutosSalida / registrosValidos.length);
+                    const hSalida = Math.floor(promedioSalida / 60);
+                    const mSalida = promedioSalida % 60;
+
+                    // Calcular promedio de horas diarias
+                    const totalHoras = registrosValidos.reduce((sum, r) => sum + r.total, 0);
+                    const promedioDiario = totalHoras / registrosValidos.length;
+                    const hPromedio = Math.floor(promedioDiario);
+                    const mPromedio = Math.round((promedioDiario - hPromedio) * 60);
+
+                    return {
+                        entradaPromedio: `${String(hEntrada).padStart(2, '0')}:${String(mEntrada).padStart(2, '0')}`,
+                        salidaPromedio: `${String(hSalida).padStart(2, '0')}:${String(mSalida).padStart(2, '0')}`,
+                        diasTrabajados: registrosValidos.length,
+                        promedioDiario: `${hPromedio}h ${mPromedio}m`
+                    };
+                }
+
+                function actualizarEstadisticas() {
+                    const stats = calcularEstadisticasMes();
+
+                    const elEntrada = $('stat-entrada-promedio');
+                    const elSalida = $('stat-salida-promedio');
+                    const elDias = $('stat-dias-trabajados');
+                    const elPromedio = $('stat-promedio-diario');
+
+                    if (elEntrada) elEntrada.textContent = stats.entradaPromedio;
+                    if (elSalida) elSalida.textContent = stats.salidaPromedio;
+                    if (elDias) elDias.textContent = stats.diasTrabajados;
+                    if (elPromedio) elPromedio.textContent = stats.promedioDiario;
                 }
 
                 function esFinDeSemana() {
@@ -2541,8 +2670,9 @@
                             if (statsEl) statsEl.innerHTML = `<div style="font-size: 1.8rem;">😴 Sin actividad</div>`;
                             if (mensajeEl) mensajeEl.textContent = '...';
                         }
-                        if (hintEl) hintEl.textContent = 'Tocá para ver la Semana';
+                        if (hintEl) hintEl.textContent = 'Toca para ver la Semana';
                     }
+                    actualizarEstadisticas()
                 }
 
                 function alternarTema() {
@@ -2791,7 +2921,7 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.75
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.76
     // ====================================================================
-    1) varias mejoras de seguridad en general por IA
+    1) Nueva tarjeta de estadisticas
     -->
