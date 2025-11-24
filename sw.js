@@ -7,7 +7,7 @@ const urlsToCache = [
   './icons/icon-512.png'
 ];
 
-// Instalación del Service Worker
+// Instalación
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -15,30 +15,61 @@ self.addEventListener('install', event => {
         console.log('Archivos cacheados exitosamente');
         return cache.addAll(urlsToCache);
       })
+      .catch(err => console.error('Error al cachear:', err))
   );
+  self.skipWaiting(); // Activa inmediatamente el nuevo SW
 });
 
+// Activación y limpieza de caches antiguos
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Eliminando cache antiguo:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
     })
   );
+  return self.clients.claim(); // Toma control inmediato
 });
 
-// Interceptación de peticiones (Modo Offline)
+// Fetch con validación de origen y manejo de errores
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // Solo intercepta peticiones del mismo origen
+  if (url.origin !== location.origin) {
+    return; // Deja pasar peticiones externas sin interceptar
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        return response || fetch(event.request);
+        if (response) {
+          return response; // Devuelve del cache
+        }
+        
+        // Intenta obtener de la red
+        return fetch(event.request)
+          .then(networkResponse => {
+            // Opcionalmente cachea nuevas respuestas
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch(err => {
+            console.error('Fetch falló:', err);
+            // Opcionalmente devuelve una página offline
+            return caches.match('./index.html');
+          });
       })
   );
 });
