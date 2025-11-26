@@ -146,25 +146,32 @@
                 overflow-y: auto;
                 padding: 0.5rem;
             }
+        }
 
-            /* Scrollbar Personalizado */
-            #lista-registros::-webkit-scrollbar {
-                width: 8px;
-            }
+        /* --- Scrollbar Reutilizable (Clase Utilitaria) --- */
+        .custom-scroll {
+            overflow-y: auto;
+            overflow-x: hidden;
+            /* Activa el scroll si el contenido es muy largo */
+        }
 
-            #lista-registros::-webkit-scrollbar-track {
-                background: var(--bg-body);
-                border-radius: 4px;
-            }
+        /* Diseño de la barra */
+        .custom-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
 
-            #lista-registros::-webkit-scrollbar-thumb {
-                background: var(--border);
-                border-radius: 4px;
-            }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: var(--bg-body);
+            border-radius: 4px;
+        }
 
-            #lista-registros::-webkit-scrollbar-thumb:hover {
-                background: var(--text-muted);
-            }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
 
         /* --- Iconos --- */
@@ -416,7 +423,7 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 1rem;
-            margin-bottom: 0.5rem;
+            margin: 0.5rem;
             display: flex;
             justify-content: space-between;
             align-items: start;
@@ -514,7 +521,7 @@
 
         .toast {
             position: fixed;
-            bottom: 2rem;
+            top: 5rem;
             right: 2rem;
             background: #1f2937;
             color: white;
@@ -522,7 +529,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             opacity: 0;
-            transform: translateY(100px);
+            transform: translateX(100px);
             transition: all 0.3s;
             z-index: 1000;
             display: flex;
@@ -589,7 +596,6 @@
             margin-top: 1rem;
         }
 
-        /* Contenedor con scroll para estadísticas */
         #modal-stats .modal-content {
             max-height: 80vh;
             display: flex;
@@ -600,25 +606,6 @@
             max-height: 500px;
             overflow-y: auto;
             padding-right: 0.5rem;
-        }
-
-        /* Scrollbar personalizado para estadísticas */
-        #modal-stats .stats-grid::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #modal-stats .stats-grid::-webkit-scrollbar-track {
-            background: var(--bg-body);
-            border-radius: 4px;
-        }
-
-        #modal-stats .stats-grid::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        #modal-stats .stats-grid::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
         }
 
         @media (max-width: 640px) {
@@ -829,7 +816,7 @@
                     <svg class="icon">
                         <use href="#icon-list" />
                     </svg>
-                    Estadísticas
+                    Ver Estadísticas del Mes
                 </h2>
             </div>
         </div>
@@ -861,7 +848,7 @@
                         </button>
                     </div>
                 </div>
-                <div id="lista-registros"></div>
+                <div id="lista-registros" class="custom-scroll"></div>
                 <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
                     onclick="DataManagement.cargarMasRegistros()"></button>
             </div>
@@ -877,7 +864,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.82</span> <!-- Version -->
+                <span class="version-text">v5.84</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1108,19 +1095,19 @@
                     <svg class="icon">
                         <use href="#icon-list" />
                     </svg>
-                    Estadística Mensual
+                    Estadísticas del Mes
                 </span>
             </h3>
 
             <div class="form-group">
-                <label>Período</label>
+                <label>Seleccionar Mes</label>
                 <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"
                     style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--input-bg); color: var(--text-main);">
                     <!-- Se llenará dinámicamente -->
                 </select>
             </div>
 
-            <div class="stats-grid">
+            <div class="stats-grid custom-scroll">
                 <div class="stat-item">
                     <div class="stat-label">Días trabajados</div>
                     <div class="stat-value" id="stat-dias-trabajados">0</div>
@@ -1385,20 +1372,15 @@
                 let currentIndex = -1;
                 const MAX_HISTORY = 50;
 
-                // Función auxiliar para copia profunda segura
                 function deepClone(obj) {
-                    // Manejo de errores y casos edge
+                    if (obj === null || obj === undefined) return obj;
+
                     try {
-                        if (obj === null || obj === undefined) {
-                            return obj;
-                        }
-                        return JSON.parse(JSON.stringify(obj));
+                        return structuredClone(obj);
+
                     } catch (e) {
-                        console.error('Error en deepClone:', e);
-                        // Retornar estructura vacía según tipo
-                        if (Array.isArray(obj)) return [];
-                        if (typeof obj === 'object') return {};
-                        return null;
+                        console.warn('Fallo en structuredClone. Usando fallback JSON.stringify.', e);
+                        return JSON.parse(JSON.stringify(obj));
                     }
                 }
 
@@ -1716,45 +1698,53 @@
 
                     const registroExistente = registros.find(r => r.fecha === f);
 
+                    // ✅ VALIDACIÓN MEJORADA: Detectar si solo quiere agregar salida
                     if (!e && s) {
-                        if (!registroExistente || registroExistente.salida) {
+                        if (!registroExistente) {
+                            // No existe ningún registro para esa fecha
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                            return;
+                        }
+
+                        if (registroExistente.salida) {
+                            // Ya existe un registro completo (entrada + salida)
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Ya existe un registro completo para esta fecha', 'error');
+                            return;
+                        }
+
+                        if (!registroExistente.entrada) {
+                            // Existe registro pero sin entrada (caso raro, pero por seguridad)
                             UILogic.resetearBoton(btn);
                             UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
                             return;
                         }
                     }
 
-                    if (registroExistente && (!e || !s)) {
-                        if (!e && s && registroExistente.entrada && !registroExistente.salida) {
+                    // ✅ AGREGAR SALIDA DIRECTAMENTE si existe entrada sin salida
+                    if (registroExistente && !e && s && registroExistente.entrada && !registroExistente.salida) {
+                        registroExistente.salida = s;
+                        let t = calcularHoras(registroExistente.entrada, s, registroExistente.tiempoFuera || null);
+                        registroExistente.horas = t?.horas || 0;
+                        registroExistente.minutos = t?.minutos || 0;
+                        registroExistente.total = t?.total || 0;
+
+                        HistoryManager.saveState(registros);
+
+                        const saved = guardarYActualizar();
+                        if (saved) {
+                            UILogic.mostrarToast(`✅ Salida ${s} agregada (entrada: ${registroExistente.entrada})`, 'success');
                             UILogic.resetearBoton(btn);
-                            if (confirm(`Ya existe una entrada a las ${registroExistente.entrada}. ¿Agregar salida ${s}?`)) {
-                                registroExistente.salida = s;
-                                let t = calcularHoras(registroExistente.entrada, s, registroExistente.tiempoFuera || null);
-                                registroExistente.horas = t?.horas || 0;
-                                registroExistente.minutos = t?.minutos || 0;
-                                registroExistente.total = t?.total || 0;
-
-                                HistoryManager.saveState(registros);
-
-                                const saved = guardarYActualizar();
-                                if (saved) {
-                                    UILogic.mostrarToast('Salida agregada', 'success');
-                                    UILogic.resetearBoton(btn);
-                                    $('fecha').value = UILogic.obtenerFechaHoy();
-                                    $('salida').value = '';
-                                } else {
-                                    UILogic.resetearBoton(btn);
-                                }
-                                return;
-                            }
-                            return;
+                            $('fecha').value = UILogic.obtenerFechaHoy();
+                            $('salida').value = '';
                         } else {
                             UILogic.resetearBoton(btn);
-                            UILogic.mostrarToast('Ya existe un registro para esta fecha', 'error');
-                            return;
                         }
+                        return;
                     }
 
+                    // Validación para registros con ambos campos o solo entrada
                     if (registroExistente) {
                         UILogic.resetearBoton(btn);
                         UILogic.mostrarToast('Ya existe un registro para esta fecha', 'error');
@@ -3054,8 +3044,185 @@
                 }
 
                 function generarReporte() {
-                    // Función placeholder para futura implementación
-                    mostrarToast('Función en desarrollo', 'info');
+                    const selectMes = $('select-mes-stats');
+                    const mesSeleccionado = selectMes ? selectMes.value : null;
+
+                    if (!mesSeleccionado) {
+                        mostrarToast('No hay mes seleccionado', 'error');
+                        return;
+                    }
+
+                    const stats = calcularEstadisticasMes(mesSeleccionado);
+                    const nombreMes = selectMes.options[selectMes.selectedIndex].text;
+
+                    // Obtener registros del mes
+                    const [año, mes] = mesSeleccionado.split('-').map(Number);
+                    const registrosMes = D.registros().filter(r => {
+                        const [aReg, mReg] = r.fecha.split('-').map(Number);
+                        return aReg === año && mReg === mes;
+                    });
+
+                    // ============================================
+                    // ESTRUCTURA MODULAR DEL REPORTE
+                    // ============================================
+
+                    const reporte = {
+                        // --- ENCABEZADO ---
+                        header: () => `
+╔════════════════════════════════════════════════════════════╗
+║              REPORTE DE HORAS TRABAJADAS                   ║
+╚════════════════════════════════════════════════════════════╝
+
+📅 Período: ${nombreMes}
+📊 Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+
+                        // --- RESUMEN GENERAL ---
+                        resumenGeneral: () => `
+
+📈 RESUMEN GENERAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   • Días trabajados:        ${stats.diasTrabajados}
+   • Feriados:               ${stats.feriados}
+   • Ausencias:              ${stats.ausencias}
+   
+   • Entrada promedio:       ${stats.entradaPromedio}
+   • Salida promedio:        ${stats.salidaPromedio}
+   • Promedio diario:        ${stats.promedioDiario}`,
+
+                        // --- DETALLE DIARIO ---
+                        detalleDiario: () => {
+                            let seccion = `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 DETALLE DIARIO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+
+                            // Ordenar registros por fecha ascendente
+                            const registrosOrdenados = [...registrosMes].sort((a, b) =>
+                                new Date(a.fecha) - new Date(b.fecha)
+                            );
+
+                            registrosOrdenados.forEach(r => {
+                                const dia = obtenerNombreDia(r.fecha);
+                                const fecha = r.fecha.split('-').reverse().join('/');
+
+                                const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
+                                const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
+
+                                let linea = `${dia.padEnd(10)} ${fecha}  `;
+
+                                if (esFeriado) {
+                                    linea += `🥳 FERIADO`;
+                                } else if (esAusencia) {
+                                    linea += `✈️ AUSENCIA`;
+                                } else {
+                                    const entrada = r.entrada || '--:--';
+                                    const salida = r.salida || '--:--';
+                                    const total = r.salida ? `${r.horas}h ${r.minutos}m` : 'Incompleto';
+                                    const tiempoFuera = r.tiempoFuera ? ` (${r.tiempoFuera} fuera)` : '';
+                                    linea += `${entrada} → ${salida}  [${total}]${tiempoFuera}`;
+                                }
+
+                                seccion += linea + '\n';
+                            });
+
+                            return seccion;
+                        },
+
+                        // --- TOTALES DEL MES ---
+                        totalesMes: () => {
+                            const totalHoras = registrosMes
+                                .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11')
+                                .reduce((sum, r) => sum + r.total, 0);
+
+                            const horasTotales = Math.floor(totalHoras);
+                            const minutosTotales = Math.round((totalHoras - horasTotales) * 60);
+
+                            // Calcular total semanal (si el mes incluye la semana actual)
+                            const { inicio: ini, fin: fn } = obtenerSemanaActual();
+                            const registrosSemanaActual = registrosMes.filter(r =>
+                                r.fecha >= ini &&
+                                r.fecha <= fn &&
+                                r.entrada !== '00:00' &&
+                                r.entrada !== '11:11'
+                            );
+
+                            const totalSemanal = registrosSemanaActual.reduce((sum, r) => sum + r.total, 0);
+                            const horasSemanales = Math.floor(totalSemanal);
+                            const minutosSemanales = Math.round((totalSemanal - horasSemanales) * 60);
+
+                            let seccionSemanal = '';
+                            if (registrosSemanaActual.length > 0) {
+                                seccionSemanal = `\n   • Total semana actual:     ${horasSemanales}h ${minutosSemanales}m (${totalSemanal.toFixed(2)}h)`;
+                            }
+
+                            return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💼 TOTALES DEL MES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   • Total horas trabajadas:  ${horasTotales}h ${minutosTotales}m (${totalHoras.toFixed(2)}h)${seccionSemanal}`;
+                        },
+
+                        // --- CONFIGURACIÓN ---
+                        configuracion: () => `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚙️ CONFIGURACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   • Horas diarias:          ${D.horasDiarias()}
+   • Días hábiles/semana:    ${D.diasHabiles()}
+   • Horas semanales:        ${D.horasSemanales()}`,
+
+                        // --- FOOTER ---
+                        footer: () => `
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Generado por Sistema de Horarios version v5.84
+`
+                    };
+
+                    // ============================================
+                    // GENERAR CONTENIDO COMPLETO
+                    // ============================================
+                    // secciones
+                    const contenido =
+                        reporte.header() +
+                        reporte.resumenGeneral() +
+                        reporte.detalleDiario() +
+                        reporte.totalesMes() +
+                        reporte.configuracion() +
+                        reporte.footer();
+
+                    // ============================================
+                    // DESCARGAR ARCHIVO
+                    // ============================================
+                    try {
+                        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `reporte_${mesSeleccionado}.txt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+
+                        mostrarToast('✅ Reporte generado', 'success');
+                    } catch (e) {
+                        console.error('Error generando reporte:', e);
+                        mostrarToast('Error al generar reporte', 'error');
+                    }
                 }
 
                 function cerrarStats() {
@@ -3101,30 +3268,6 @@
                         const el = $(id);
                         if (el) el.addEventListener('input', formatearInput);
                     });
-
-                    // 1. Configurar navegación con ENTER en Entrada -> Salida
-                    const inputEntrada = $('entrada');
-                    const inputSalida = $('salida');
-                    const btnAgregar = $('btn-agregar');
-
-                    if (inputEntrada && inputSalida) {
-                        inputEntrada.addEventListener('keydown', function (e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault(); // Evita que el formulario se envíe o haga cosas raras
-                                inputSalida.focus(); // Mueve el cursor al siguiente campo
-                            }
-                        });
-                    }
-
-                    // 2. Configurar acción con ENTER en Salida -> Registrar
-                    if (inputSalida && btnAgregar) {
-                        inputSalida.addEventListener('keydown', function (e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                btnAgregar.click(); // Simula un clic en el botón Registrar
-                            }
-                        });
-                    }
 
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
@@ -3206,9 +3349,10 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.82
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.84
     // ====================================================================
-    2) Se agrega barra de desplazamiento en las estadisticas
-    4) Selector de mes/año en estadísticas (solo muestra meses con registros)
-    5) Botón "Reporte" preparado para futura implementación
-    -->
+    1) Se agiliza el registro de salida cuando hay una entrada "en curso"
+    2) Se mueven los toast al borde superior
+    3) Se remueven los listener de las teclas, ya que en algunos casos impiden
+    ver los toast notification
+    4) Implementacion de reportes
