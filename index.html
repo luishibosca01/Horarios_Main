@@ -535,6 +535,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
+            white-space: pre-line;
         }
 
         .toast.show {
@@ -726,7 +727,11 @@
             <path d="M7 11V7a5 5 0 0 1 10 0v4" class="icon-line" stroke="currentColor"></path>
             <line x1="12" y1="16" x2="12" y2="16.01" class="icon-line" stroke-width="3" stroke="currentColor"></line>
         </symbol>
-    </svg>
+        <symbol id="icon-stats" viewBox="0 0 24 24">
+            <line x1="18" y1="20" x2="18" y2="10" class="icon-line" stroke="currentColor"></line>
+            <line x1="12" y1="20" x2="12" y2="4" class="icon-line" stroke="currentColor"></line>
+            <line x1="6" y1="20" x2="6" y2="14" class="icon-line" stroke="currentColor"></line>
+        </symbol>
     </svg>
 
     <div class="header">
@@ -814,9 +819,9 @@
                 style="animation-delay: 0.3s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
                 <h2 style="margin: 0; justify-content: center">
                     <svg class="icon">
-                        <use href="#icon-list" />
+                        <use href="#icon-stats" />
                     </svg>
-                    Ver Estadísticas del Mes
+                    Estadísticas
                 </h2>
             </div>
         </div>
@@ -824,7 +829,7 @@
         <div class="right-column">
             <div class="card animated-card" style="animation-delay: 0.2s;">
                 <div
-                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <h2 style="margin-bottom: 0;">
                         <svg class="icon">
                             <use href="#icon-list" />
@@ -864,7 +869,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.84</span> <!-- Version -->
+                <span class="version-text">v5.85</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -990,14 +995,14 @@
                     <svg class="icon">
                         <use href="#icon-list" />
                     </svg>
-                    Combinar (Agregar faltantes)
+                    Combinar
                 </button>
 
                 <button class="btn-delete" onclick="DataManagement.importarDatos('replace')">
                     <svg class="icon">
                         <use href="#icon-trash" />
                     </svg>
-                    Reemplazar todo (Borrar actual)
+                    Reemplazar
                 </button>
 
                 <button class="btn-cancel" onclick="UILogic.cerrarImportar()">
@@ -1093,17 +1098,16 @@
             <h3>
                 <span class="modal-title-block">
                     <svg class="icon">
-                        <use href="#icon-list" />
+                        <use href="#icon-stats" />
                     </svg>
-                    Estadísticas del Mes
+                    Estadísticas
                 </span>
             </h3>
 
             <div class="form-group">
-                <label>Seleccionar Mes</label>
+                <label>Período</label>
                 <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"
                     style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--input-bg); color: var(--text-main);">
-                    <!-- Se llenará dinámicamente -->
                 </select>
             </div>
 
@@ -1698,7 +1702,7 @@
 
                     const registroExistente = registros.find(r => r.fecha === f);
 
-                    // ✅ VALIDACIÓN MEJORADA: Detectar si solo quiere agregar salida
+                    // Detectar si solo quiere agregar salida
                     if (!e && s) {
                         if (!registroExistente) {
                             // No existe ningún registro para esa fecha
@@ -1734,7 +1738,7 @@
 
                         const saved = guardarYActualizar();
                         if (saved) {
-                            UILogic.mostrarToast(`✅ Salida ${s} agregada (entrada: ${registroExistente.entrada})`, 'success');
+                            UILogic.mostrarToast(`✅ Salida ${s} agregada \n(entrada: ${registroExistente.entrada})`, 'success');
                             UILogic.resetearBoton(btn);
                             $('fecha').value = UILogic.obtenerFechaHoy();
                             $('salida').value = '';
@@ -3044,185 +3048,8 @@
                 }
 
                 function generarReporte() {
-                    const selectMes = $('select-mes-stats');
-                    const mesSeleccionado = selectMes ? selectMes.value : null;
-
-                    if (!mesSeleccionado) {
-                        mostrarToast('No hay mes seleccionado', 'error');
-                        return;
-                    }
-
-                    const stats = calcularEstadisticasMes(mesSeleccionado);
-                    const nombreMes = selectMes.options[selectMes.selectedIndex].text;
-
-                    // Obtener registros del mes
-                    const [año, mes] = mesSeleccionado.split('-').map(Number);
-                    const registrosMes = D.registros().filter(r => {
-                        const [aReg, mReg] = r.fecha.split('-').map(Number);
-                        return aReg === año && mReg === mes;
-                    });
-
-                    // ============================================
-                    // ESTRUCTURA MODULAR DEL REPORTE
-                    // ============================================
-
-                    const reporte = {
-                        // --- ENCABEZADO ---
-                        header: () => `
-╔════════════════════════════════════════════════════════════╗
-║              REPORTE DE HORAS TRABAJADAS                   ║
-╚════════════════════════════════════════════════════════════╝
-
-📅 Período: ${nombreMes}
-📊 Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`,
-
-                        // --- RESUMEN GENERAL ---
-                        resumenGeneral: () => `
-
-📈 RESUMEN GENERAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-   • Días trabajados:        ${stats.diasTrabajados}
-   • Feriados:               ${stats.feriados}
-   • Ausencias:              ${stats.ausencias}
-   
-   • Entrada promedio:       ${stats.entradaPromedio}
-   • Salida promedio:        ${stats.salidaPromedio}
-   • Promedio diario:        ${stats.promedioDiario}`,
-
-                        // --- DETALLE DIARIO ---
-                        detalleDiario: () => {
-                            let seccion = `
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📋 DETALLE DIARIO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-`;
-
-                            // Ordenar registros por fecha ascendente
-                            const registrosOrdenados = [...registrosMes].sort((a, b) =>
-                                new Date(a.fecha) - new Date(b.fecha)
-                            );
-
-                            registrosOrdenados.forEach(r => {
-                                const dia = obtenerNombreDia(r.fecha);
-                                const fecha = r.fecha.split('-').reverse().join('/');
-
-                                const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
-                                const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
-
-                                let linea = `${dia.padEnd(10)} ${fecha}  `;
-
-                                if (esFeriado) {
-                                    linea += `🥳 FERIADO`;
-                                } else if (esAusencia) {
-                                    linea += `✈️ AUSENCIA`;
-                                } else {
-                                    const entrada = r.entrada || '--:--';
-                                    const salida = r.salida || '--:--';
-                                    const total = r.salida ? `${r.horas}h ${r.minutos}m` : 'Incompleto';
-                                    const tiempoFuera = r.tiempoFuera ? ` (${r.tiempoFuera} fuera)` : '';
-                                    linea += `${entrada} → ${salida}  [${total}]${tiempoFuera}`;
-                                }
-
-                                seccion += linea + '\n';
-                            });
-
-                            return seccion;
-                        },
-
-                        // --- TOTALES DEL MES ---
-                        totalesMes: () => {
-                            const totalHoras = registrosMes
-                                .filter(r => r.entrada !== '00:00' && r.entrada !== '11:11')
-                                .reduce((sum, r) => sum + r.total, 0);
-
-                            const horasTotales = Math.floor(totalHoras);
-                            const minutosTotales = Math.round((totalHoras - horasTotales) * 60);
-
-                            // Calcular total semanal (si el mes incluye la semana actual)
-                            const { inicio: ini, fin: fn } = obtenerSemanaActual();
-                            const registrosSemanaActual = registrosMes.filter(r =>
-                                r.fecha >= ini &&
-                                r.fecha <= fn &&
-                                r.entrada !== '00:00' &&
-                                r.entrada !== '11:11'
-                            );
-
-                            const totalSemanal = registrosSemanaActual.reduce((sum, r) => sum + r.total, 0);
-                            const horasSemanales = Math.floor(totalSemanal);
-                            const minutosSemanales = Math.round((totalSemanal - horasSemanales) * 60);
-
-                            let seccionSemanal = '';
-                            if (registrosSemanaActual.length > 0) {
-                                seccionSemanal = `\n   • Total semana actual:     ${horasSemanales}h ${minutosSemanales}m (${totalSemanal.toFixed(2)}h)`;
-                            }
-
-                            return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-💼 TOTALES DEL MES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-   • Total horas trabajadas:  ${horasTotales}h ${minutosTotales}m (${totalHoras.toFixed(2)}h)${seccionSemanal}`;
-                        },
-
-                        // --- CONFIGURACIÓN ---
-                        configuracion: () => `
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚙️ CONFIGURACIÓN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-   • Horas diarias:          ${D.horasDiarias()}
-   • Días hábiles/semana:    ${D.diasHabiles()}
-   • Horas semanales:        ${D.horasSemanales()}`,
-
-                        // --- FOOTER ---
-                        footer: () => `
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Generado por Sistema de Horarios version v5.84
-`
-                    };
-
-                    // ============================================
-                    // GENERAR CONTENIDO COMPLETO
-                    // ============================================
-                    // secciones
-                    const contenido =
-                        reporte.header() +
-                        reporte.resumenGeneral() +
-                        reporte.detalleDiario() +
-                        reporte.totalesMes() +
-                        reporte.configuracion() +
-                        reporte.footer();
-
-                    // ============================================
-                    // DESCARGAR ARCHIVO
-                    // ============================================
-                    try {
-                        const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `reporte_${mesSeleccionado}.txt`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-
-                        mostrarToast('✅ Reporte generado', 'success');
-                    } catch (e) {
-                        console.error('Error generando reporte:', e);
-                        mostrarToast('Error al generar reporte', 'error');
-                    }
+                    // Función placeholder para futura implementación
+                    mostrarToast('Función en desarrollo', 'info');
                 }
 
                 function cerrarStats() {
@@ -3349,10 +3176,9 @@ Generado por Sistema de Horarios version v5.84
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.84
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.85
     // ====================================================================
-    1) Se agiliza el registro de salida cuando hay una entrada "en curso"
-    2) Se mueven los toast al borde superior
-    3) Se remueven los listener de las teclas, ya que en algunos casos impiden
-    ver los toast notification
-    4) Implementacion de reportes
+    1) optimizacion history manager
+    2) cambios de presentacion menores
+    3) cambios en algunos iconos svg
+    4) agregado salto de linea en toast
