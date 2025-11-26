@@ -877,7 +877,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.81</span> <!-- Version -->
+                <span class="version-text">v5.82</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1112,6 +1112,14 @@
                 </span>
             </h3>
 
+            <div class="form-group">
+                <label>Seleccionar Mes</label>
+                <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"
+                    style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--input-bg); color: var(--text-main);">
+                    <!-- Se llenará dinámicamente -->
+                </select>
+            </div>
+
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-label">Días trabajados</div>
@@ -1140,6 +1148,12 @@
             </div>
 
             <div class="btn-group" style="margin-top: 1.5rem;">
+                <button class="btn-backup" onclick="UILogic.generarReporte()">
+                    <svg class="icon">
+                        <use href="#icon-download" />
+                    </svg>
+                    Reporte
+                </button>
                 <button class="btn-cancel" onclick="UILogic.cerrarStats()">
                     Cerrar
                 </button>
@@ -2584,10 +2598,19 @@
                     lista.appendChild(fragmento);
                 }
 
-                function calcularEstadisticasMes() {
-                    const hoy = new Date();
-                    const mesActual = hoy.getMonth();
-                    const añoActual = hoy.getFullYear();
+                function calcularEstadisticasMes(mesAnio = null) {
+                    // Si no se especifica mes, usar el actual
+                    let mesActual, añoActual;
+
+                    if (mesAnio) {
+                        const [año, mes] = mesAnio.split('-').map(Number);
+                        añoActual = año;
+                        mesActual = mes - 1; // JavaScript usa 0-11 para meses
+                    } else {
+                        const hoy = new Date();
+                        mesActual = hoy.getMonth();
+                        añoActual = hoy.getFullYear();
+                    }
 
                     const registrosMes = D.registros().filter(r => {
                         const [año, mes] = r.fecha.split('-').map(Number);
@@ -2656,8 +2679,8 @@
                     };
                 }
 
-                function actualizarEstadisticas() {
-                    const stats = calcularEstadisticasMes();
+                function actualizarEstadisticas(mesAnio = null) {
+                    const stats = calcularEstadisticasMes(mesAnio);
 
                     const elEntrada = $('stat-entrada-promedio');
                     const elSalida = $('stat-salida-promedio');
@@ -2958,9 +2981,81 @@
                 }
 
                 function mostrarStats() {
-                    // Nos aseguramos que los datos estén frescos al abrir
-                    actualizarEstadisticas();
+                    // Llenar el selector con los meses disponibles
+                    poblarSelectorMeses();
+
+                    // Actualizar estadísticas con el mes seleccionado (por defecto el actual)
+                    const selectMes = $('select-mes-stats');
+                    if (selectMes && selectMes.value) {
+                        actualizarEstadisticas(selectMes.value);
+                    } else {
+                        actualizarEstadisticas();
+                    }
+
                     $('modal-stats').classList.add('show');
+                }
+
+                function poblarSelectorMeses() {
+                    const selectMes = $('select-mes-stats');
+                    if (!selectMes) return;
+
+                    // Obtener todos los meses únicos de los registros
+                    const mesesUnicos = new Set();
+                    D.registros().forEach(r => {
+                        const mesAnio = r.fecha.substring(0, 7); // "2025-01"
+                        mesesUnicos.add(mesAnio);
+                    });
+
+                    // Convertir a array y ordenar (más reciente primero)
+                    const mesesOrdenados = Array.from(mesesUnicos).sort().reverse();
+
+                    // Limpiar opciones previas
+                    selectMes.innerHTML = '';
+
+                    // Si no hay registros
+                    if (mesesOrdenados.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Sin registros';
+                        selectMes.appendChild(option);
+                        return;
+                    }
+
+                    // Agregar mes actual por defecto si tiene registros
+                    const hoy = new Date();
+                    const mesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`;
+
+                    // Crear opciones
+                    mesesOrdenados.forEach(mesAnio => {
+                        const option = document.createElement('option');
+                        option.value = mesAnio;
+
+                        // Formatear texto del mes
+                        const [año, mes] = mesAnio.split('-');
+                        const fecha = new Date(año, mes - 1, 1);
+                        const nombreMes = fecha.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+                        option.textContent = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+                        // Seleccionar el mes actual por defecto
+                        if (mesAnio === mesActual) {
+                            option.selected = true;
+                        }
+
+                        selectMes.appendChild(option);
+                    });
+                }
+
+                function cambiarMesStats() {
+                    const selectMes = $('select-mes-stats');
+                    if (!selectMes) return;
+
+                    const mesSeleccionado = selectMes.value;
+                    actualizarEstadisticas(mesSeleccionado);
+                }
+
+                function generarReporte() {
+                    // Función placeholder para futura implementación
+                    mostrarToast('Función en desarrollo', 'info');
                 }
 
                 function cerrarStats() {
@@ -3038,6 +3133,7 @@
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, mostrarStats, cerrarStats,
+                        cambiarMesStats, generarReporte
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -3084,7 +3180,7 @@
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
-                    cerrarAyuda
+                    cerrarAyuda, mostrarStats, cerrarStats, cambiarMesStats, generarReporte
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -3110,7 +3206,9 @@
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.81
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.82
     // ====================================================================
-    1) Agregado botón de instalación PWA (solo visible si no está instalada)
+    2) Se agrega barra de desplazamiento en las estadisticas
+    4) Selector de mes/año en estadísticas (solo muestra meses con registros)
+    5) Botón "Reporte" preparado para futura implementación
     -->
