@@ -4107,7 +4107,7 @@ Generado por Sistema de Horarios version v6.00
 
                     // 3. Validaciones básicas de seguridad
                     const validaciones = {
-                        tieneVersionCorrecta: swContent.includes('v5.92') || swContent.includes('v5'),
+                        tieneVersionCorrecta: swContent.includes('v6.00') || swContent.includes('horarios-v6'),
                         noTieneEval: !swContent.includes('eval('),
                         noTieneFunction: !swContent.includes('new Function('),
                         tamanoRazonable: swContent.length > 100 && swContent.length < 50000,
