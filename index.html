@@ -299,10 +299,16 @@
             background: #4b5563;
         }
 
-        .btn-small {
-            width: auto;
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+        #btn-cargar-mas {
+            margin: 1rem auto 0 auto;
+            width: 50px;
+            height: 50px;
+            background: var(--c-gray-btn);
+            border-radius: 50%;
+        }
+
+        #btn-cargar-mas[style*="visibility: hidden"] {
+            display: none !important;
         }
 
         .icon-btn,
@@ -795,6 +801,10 @@
             <circle cx="18" cy="6" r="2" fill="currentColor"></circle>
             <circle cx="12" cy="18" r="2" fill="currentColor"></circle>
         </symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19" class="icon-line" stroke="currentColor"></line>
+            <line x1="5" y1="12" x2="19" y2="12" class="icon-line" stroke="currentColor"></line>
+        </symbol>
     </svg>
 
     <div class="header">
@@ -842,7 +852,7 @@
             <div class="card animated-card" style="animation-delay: 0.1s;">
                 <h2><svg class="icon">
                         <use href="#icon-edit" />
-                    </svg> Registrar Horas</h2>
+                    </svg> Registro</h2>
                 <div class="form-group">
                     <label>Fecha</label>
                     <div class="input-with-btn">
@@ -927,8 +937,13 @@
                     </div>
                 </div>
                 <div id="lista-registros" class="custom-scroll"></div>
-                <button id="btn-cargar-mas" class="btn-small btn-backup" style="margin-top: 1rem; display: none;"
-                    onclick="DataManagement.cargarMasRegistros()"></button>
+                <button id="btn-cargar-mas"
+                    style="margin-top: 1rem; visibility: hidden; display: flex; justify-content: center; align-items: center;"
+                    onclick="DataManagement.cargarMasRegistros()" title="Cargar más registros">
+                    <svg class="icon" style="width: 1.5em; height: 1.5em;">
+                        <use href="#icon-plus" />
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -942,7 +957,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v5.97</span> <!-- Version -->
+                <span class="version-text">v6.00</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1138,7 +1153,7 @@
                 style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto;">
                 <p><strong><svg class="icon">
                             <use href="#icon-save" />
-                        </svg> Registrar Horas:</strong> Podes ingresar una hora de entrada y registrar, y luego mas
+                        </svg> Registrar:</strong> Podes ingresar una hora de entrada y registrar, y luego mas
                     tarde
                     podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro en el
                     historico.</p>
@@ -1840,14 +1855,6 @@
                         return;
                     }
 
-                    const confirmar = confirm(
-                        `⚠️ ¿Eliminar ${registrosAEliminar.length} registro(s) de ${tipoTexto}?\n\n` +
-                        `Período: ${desde} a ${hasta}\n\n` +
-                        `Esta acción se puede DESHACER antes de cerrar la página.`
-                    );
-
-                    if (!confirmar) return;
-
                     registros = registros.filter(r => !registrosAEliminar.includes(r));
 
                     const saved = await guardarYActualizar();
@@ -2041,6 +2048,7 @@
                     }
                     return valido;
                 }
+
                 async function agregarRegistro() {
                     if (!validarFormulario()) {
                         UILogic.mostrarToast('Verifica los campos', 'error');
@@ -2049,37 +2057,49 @@
 
                     const btn = $('btn-agregar');
                     btn.disabled = true;
+                    let usaHoraActual = false;
 
                     const f = S.sanitizeString($('fecha').value, 10);
-                    const e = S.sanitizeString($('entrada').value.trim(), 5);
-                    const s = S.sanitizeString($('salida').value.trim(), 5);
-
-                    if (!e && !s) {
-                        UILogic.resetearBoton(btn);
-                        UILogic.mostrarToast('Rellena algun campo', 'error');
-                        return;
-                    }
+                    let e = S.sanitizeString($('entrada').value.trim(), 5);
+                    let s = S.sanitizeString($('salida').value.trim(), 5);
 
                     const registroExistente = registros.find(r => r.fecha === f);
+
+                    // Si no hay entrada ni salida, decidir qué hacer según el contexto
+                    if (!e && !s) {
+                        const now = new Date();
+                        const h = String(now.getHours()).padStart(2, '0');
+                        const m = String(now.getMinutes()).padStart(2, '0');
+                        const horaActual = `${h}:${m}`;
+
+                        // Si existe registro con entrada pero sin salida, agregar salida
+                        if (registroExistente && registroExistente.entrada && !registroExistente.salida) {
+                            s = horaActual;
+                            $('salida').value = s;
+                            usaHoraActual = true;
+                        } else {
+                            // Si no, crear entrada con hora actual
+                            e = horaActual;
+                            $('entrada').value = e;
+                            usaHoraActual = true;
+                        }
+                    }
 
                     // Detectar si solo quiere agregar salida
                     if (!e && s) {
                         if (!registroExistente) {
-                            // No existe ningún registro para esa fecha
                             UILogic.resetearBoton(btn);
                             UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
                             return;
                         }
 
                         if (registroExistente.salida) {
-                            // Ya existe un registro completo (entrada + salida)
                             UILogic.resetearBoton(btn);
                             UILogic.mostrarToast('Ya existe un registro completo para esta fecha', 'error');
                             return;
                         }
 
                         if (!registroExistente.entrada) {
-                            // Existe registro pero sin entrada (caso raro, pero por seguridad)
                             UILogic.resetearBoton(btn);
                             UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
                             return;
@@ -2098,7 +2118,10 @@
 
                         const saved = await guardarYActualizar();
                         if (saved) {
-                            UILogic.mostrarToast(`✅ Salida ${s} agregada \n(entrada: ${registroExistente.entrada})`, 'success');
+                            const mensaje = usaHoraActual ?
+                                `Salida registrada con hora actual\n(entrada: ${registroExistente.entrada})` :
+                                `Salida ${s} agregada\n(entrada: ${registroExistente.entrada})`;
+                            UILogic.mostrarToast(mensaje, 'success');
                             UILogic.resetearBoton(btn);
                             $('fecha').value = UILogic.obtenerFechaHoy();
                             $('salida').value = '';
@@ -2111,6 +2134,9 @@
                     // Validación para registros con ambos campos o solo entrada
                     if (registroExistente) {
                         UILogic.resetearBoton(btn);
+                        if (usaHoraActual) {
+                            $('entrada').value = '';
+                        }
                         UILogic.mostrarToast('Ya existe un registro para esta fecha', 'error');
                         return;
                     }
@@ -2141,7 +2167,9 @@
 
                     const saved = await guardarYActualizar();
                     if (saved) {
-                        UILogic.mostrarToast('Registro agregado', 'success');
+                        // TOAST PERSONALIZADO
+                        const mensaje = usaHoraActual ? 'Registro agregado con hora actual' : 'Registro agregado';
+                        UILogic.mostrarToast(mensaje, 'success');
                         UILogic.resetearBoton(btn);
                         $('fecha').value = UILogic.obtenerFechaHoy();
                         $('entrada').value = '';
@@ -2152,7 +2180,7 @@
                 }
 
                 async function eliminarRegistroActual() {
-                    if (editandoId && confirm('¿Eliminar este registro?')) {
+                    if (editandoId) {
                         const modal = $('modal-editar');
                         const btnEliminar = modal.querySelector('.btn-delete');
                         btnEliminar.disabled = true;
@@ -2205,6 +2233,23 @@
                     if (!e && s) {
                         UILogic.restaurarBotonGuardarEdicion(btnGuardar);
                         UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                        return;
+                    }
+
+                    if (!e && !s) {
+                        // Si ambos campos están vacíos, eliminar el registro
+                        registros = registros.filter(r => r.id !== editandoId);
+                        HistoryManager.saveState(registros);
+
+                        const saved = await guardarYActualizar();
+
+                        if (saved) {
+                            UILogic.mostrarToast('Registro eliminado (vacío)', 'info');
+                            UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                            UILogic.cerrarEdicion();
+                        } else {
+                            UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                        }
                         return;
                     }
 
@@ -3006,6 +3051,20 @@
                 function actualizarListaRegistros(registros) {
                     const lista = $('lista-registros');
                     const btnCargarMas = $('btn-cargar-mas');
+
+                    // Guardar estado de grupos expandidos ANTES de limpiar
+                    const gruposExpandidos = new Set();
+                    lista.querySelectorAll('.registro-grupo-detalle[style*="display: block"]').forEach(detalle => {
+                        const container = detalle.closest('.registro-grupo-container');
+                        if (container) {
+                            const header = container.querySelector('.registro-item');
+                            const fechaTexto = header?.querySelector('.registro-horas')?.textContent;
+                            if (fechaTexto) {
+                                gruposExpandidos.add(fechaTexto.trim());
+                            }
+                        }
+                    });
+
                     lista.innerHTML = '';
                     const horasDiarias = D.horasDiarias();
 
@@ -3078,7 +3137,7 @@
 
                         // Agregar el item (grupo o individual)
                         if (grupo.tipo === 'grupo') {
-                            const container = crearGrupoExpandible(grupo, horasDiarias);
+                            const container = crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos);
                             fragmento.appendChild(container);
                         } else {
                             const r = grupo.registros[0];
@@ -3094,15 +3153,17 @@
                     if (limiteVisibles < totalItems) {
                         const restantes = totalItems - limiteVisibles;
                         const aCargar = Math.min(10, restantes);
-                        btnCargarMas.textContent = `Cargar más (${aCargar} de ${restantes} restantes)`;
-                        btnCargarMas.style.display = 'block';
+                        btnCargarMas.style.visibility = 'visible';
+                        btnCargarMas.style.pointerEvents = 'auto';
+                        btnCargarMas.title = `Cargar ${aCargar} más (${restantes} restantes)`;
                     } else {
-                        btnCargarMas.style.display = 'none';
+                        btnCargarMas.style.visibility = 'hidden';
+                        btnCargarMas.style.pointerEvents = 'none';
                     }
                 }
 
                 // Función auxiliar para crear grupo expandible (agrégala si no existe)
-                function crearGrupoExpandible(grupo, horasDiarias) {
+                function crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos = new Set()) {
                     const primerReg = grupo.registros[0];
                     const ultimoReg = grupo.registros[grupo.registros.length - 1];
 
@@ -3128,16 +3189,22 @@
 
                     const horasEl = document.createElement('div');
                     horasEl.className = 'registro-horas';
-                    horasEl.textContent = `${primerReg.fecha.substring(8)} al ${ultimoReg.fecha.substring(8)}`;
+                    const rangoFechas = `${primerReg.fecha.substring(8)} al ${ultimoReg.fecha.substring(8)}`;
+                    horasEl.textContent = rangoFechas;
 
                     const totalEl = document.createElement('div');
                     totalEl.className = 'registro-total purple-text';
-                    totalEl.innerHTML = '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-list"/></svg> Ver detalles';
 
                     // Lista expandible
                     const listaExpandible = document.createElement('div');
                     listaExpandible.className = 'registro-grupo-detalle';
-                    listaExpandible.style.display = 'none';
+
+                    // 🔑 Verificar si este grupo estaba expandido
+                    const estabaExpandido = gruposExpandidos.has(rangoFechas);
+                    listaExpandible.style.display = estabaExpandido ? 'block' : 'none';
+                    totalEl.innerHTML = estabaExpandido ?
+                        '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-cancelar"/></svg> Ocultar' :
+                        '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-list"/></svg> Ver detalles';
 
                     grupo.registros.forEach(r => {
                         const item = crearItemRegistroIndividual(r, horasDiarias);
@@ -3869,7 +3936,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v5.97
+Generado por Sistema de Horarios version v6.00
 `
                     };
 
@@ -4076,7 +4143,7 @@ Generado por Sistema de Horarios version v5.97
                         console.warn('⚠️ El Service Worker ha cambiado desde la última vez');
 
                         if (window.UILogic) {
-                            UILogic.mostrarToast('Service Worker actualizado', 'info');
+                            UILogic.mostrarToast('SW Actualizado', 'info');
                         }
                     }
                     localStorage.setItem('sw-hash', hash);
@@ -4104,14 +4171,12 @@ Generado por Sistema de Horarios version v5.97
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 5.97
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.00
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
     la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) agrupamiento de dias especiales consecutivos, por ejemplo vacaciones de 30 dias,
-    antes se mostraban 30 registros, ahora se agrupan en 1 item individual que contiene a los
-    30 registros
+    1) varias mejoras en el boton registrar
     -->
