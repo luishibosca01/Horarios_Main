@@ -122,6 +122,10 @@
             color: var(--text-main);
         }
 
+        .card h2.no-margin {
+            margin-bottom: 0;
+        }
+
         @media (min-width: 1024px) {
             .container {
                 display: grid;
@@ -430,7 +434,6 @@
             margin: 1rem;
             color: var(--text-muted);
             font-size: 18px;
-            text-align: center;
         }
 
         .registro-item {
@@ -836,7 +839,6 @@
             <line x1="5" y1="12" x2="19" y2="12" class="icon-line" stroke="currentColor"></line>
         </symbol>
     </svg>
-
     <div class="header">
         <h1><svg class="icon">
                 <use href="#icon-clock" />
@@ -880,19 +882,22 @@
                 <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
             </div>
             <div class="card animated-card" style="animation-delay: 0.1s;">
-                <h2 style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                <h2 class="no-margin"
+                    style="display: flex; justify-content: center; align-items: center; position: relative;"> <button
+                        onclick="DataManagement.agregarRegistro()" id="btn-agregar"
+                        style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text-main);">
                         <svg class="icon">
-                            <use href="#icon-edit" />
-                        </svg> Registro
-                    </span>
+                            <use href="#icon-save" />
+                        </svg> Registrar
+                    </button>
                     <button class="icon-btn collapse-toggle" id="btn-toggle-form" onclick="UILogic.toggleFormulario()"
-                        style="background: transparent; border: 1px solid var(--border); padding: 0.5rem;">
+                        style="background: transparent; border: 1px solid var(--border); padding: 0.5rem; position: absolute; right: 0;">
                         <svg class="icon" style="width: 1.2em; height: 1.2em;">
                             <use href="#icon-plus" />
                         </svg>
                     </button>
                 </h2>
+
                 <div class="form-collapsible" id="form-registro">
                     <div class="form-group">
                         <label>Fecha</label>
@@ -928,62 +933,59 @@
                         <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
                     </div>
                 </div>
-                <button onclick="DataManagement.agregarRegistro()" id="btn-agregar">
-                    <svg class="icon">
-                        <use href="#icon-save" />
-                    </svg> Registrar
-                </button>
             </div>
             <div class="card stats-card animated-card"
                 style="animation-delay: 0.2s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
-                <h2 style="margin: 0; justify-content: center">
-                    <svg class="icon">
+                <h2 class="no-margin" style="margin: 0; justify-content: center"> <svg class="icon">
                         <use href="#icon-stats" />
                     </svg>
                     Estadísticas
                 </h2>
             </div>
         </div>
-
-        <div class="right-column">
-            <div class="card animated-card" style="animation-delay: 0.3s;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                    <h2 style="margin-bottom: 0;">
-                        <svg class="icon">
-                            <use href="#icon-list" />
-                        </svg> Histórico
-                    </h2>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
-                            <svg class="icon">
-                                <use href="#icon-filter" />
-                            </svg>
-                        </button>
-                        <button class="time-btn" id="btn-undo" onclick="HistoryManager.undo()" title="Deshacer">
-                            <svg class="icon">
-                                <use href="#icon-undo" />
-                            </svg>
-                        </button>
-                        <button class="time-btn" id="btn-redo" onclick="HistoryManager.redo()" title="Rehacer">
-                            <svg class="icon">
-                                <use href="#icon-redo" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div id="lista-registros" class="custom-scroll"></div>
-                <button class="icon-btn" id="btn-cargar-mas"
-                    style="margin: 1rem auto 0 auto; visibility: hidden; width: 50px; height: 50px; background: transparent; border: 1px solid var(--border);"
-                    onclick="DataManagement.cargarMasRegistros()" title="Cargar más registros">
+        <div class="card animated-card" style="animation-delay: 0.3s;">
+            <h2
+                style="margin-bottom: 0; display: flex; justify-content: center; align-items: center; position: relative;">
+                <svg class="icon">
+                    <use href="#icon-list" />
+                </svg> Histórico
+                <button class="icon-btn collapse-toggle" id="btn-toggle-historico"
+                    onclick="UILogic.toggleBotonesHistorico()"
+                    style="background: transparent; border: 1px solid var(--border); padding: 0.5rem; position: absolute; right: 0; width: 44px; height: 44px;">
                     <svg class="icon" style="width: 1.2em; height: 1.2em;">
                         <use href="#icon-plus" />
                     </svg>
                 </button>
+            </h2>
+            <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 1.5rem">
+                    <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
+                        <svg class="icon">
+                            <use href="#icon-filter" />
+                        </svg>
+                    </button>
+                    <button class="time-btn" id="btn-undo" onclick="HistoryManager.undo()" title="Deshacer">
+                        <svg class="icon">
+                            <use href="#icon-undo" />
+                        </svg>
+                    </button>
+                    <button class="time-btn" id="btn-redo" onclick="HistoryManager.redo()" title="Rehacer">
+                        <svg class="icon">
+                            <use href="#icon-redo" />
+                        </svg>
+                    </button>
+                </div>
             </div>
+            <div id="lista-registros" class="custom-scroll"></div>
+            <button class="icon-btn" id="btn-cargar-mas"
+                style="margin: 1rem auto 0 auto; visibility: hidden; width: 50px; height: 50px; background: transparent; border: 1px solid var(--border);"
+                onclick="DataManagement.cargarMasRegistros()" title="Cargar más registros">
+                <svg class="icon" style="width: 1.2em; height: 1.2em;">
+                    <use href="#icon-plus" />
+                </svg>
+            </button>
         </div>
     </div>
-
     <div class="modal" id="modal-config">
         <div class="modal-content">
             <h3>
@@ -993,7 +995,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.02</span> <!-- Version -->
+                <span class="version-text">v6.06</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1185,18 +1187,21 @@
                             <use href="#icon-save" />
                         </svg> Registrar:</strong> Podes ingresar una hora de entrada y registrar, y luego mas
                     tarde
-                    podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro en el
+                    podes registrar la salida, directamente desde el cuadro "registrar", o editando el registro
+                    en el
                     historico.</p>
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
                 <p><strong>🥳 Feriados:</strong> Ingresa <code>00:00</code> en Entrada y Salida.</p>
                 <p><strong>✈️ Ausencias/Licencias:</strong> Ingresa <code>11:11</code> en Entrada y Salida.</p>
-                <p><strong>🏖️ Vacaciones:</strong> Ingresa <code>22:22</code> en Entrada y Salida, o usa el botón de
+                <p><strong>🏖️ Vacaciones:</strong> Ingresa <code>22:22</code> en Entrada y Salida, o usa el
+                    botón de
                     "Registrar Período".</p>
                 <p><strong>☕ Tiempo Fuera:</strong> Para descontar tiempo del dia, si saliste por algun motivo,
                     (por ejemplo, irse al medico).</p>
                 <p><strong><svg class="icon">
                             <use href="#icon-clock" />
-                        </svg> Vistas:</strong> Toca la tarjeta de "Hoy" para ver el progreso de la "Semana".</p>
+                        </svg> Vistas:</strong> Toca la tarjeta de "Hoy" para ver el progreso de la "Semana".
+                </p>
                 <p><strong><svg class="icon">
                             <use href="#icon-save" />
                         </svg> Datos:</strong>
@@ -1720,10 +1725,10 @@
                         const stored = localStorage.getItem('registros');
                         if (!stored) return [];
                         const data = JSON.parse(stored);
-
+ 
                         if (data.hash) {
                             const hashCalculado = await S.calcularHashSHA256(data.registros);
-
+ 
                             // ✅ Usar comparación segura contra timing attacks
                             if (!S.constantTimeCompare(hashCalculado, data.hash)) {
                                 console.warn('⚠️ Integridad comprometida');
@@ -3993,7 +3998,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.02
+Generado por Sistema de Horarios version v6.05
 `
                     };
 
@@ -4075,6 +4080,14 @@ Generado por Sistema de Horarios version v6.02
                             toggleFormulario();
                         }
                     } catch (e) { }
+
+                    try {
+                        const botonesExpandido = localStorage.getItem('botonesHistoricoExpandido') === 'true';
+                        if (botonesExpandido) {
+                            toggleBotonesHistorico();
+                        }
+                    } catch (e) { }
+
                     ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
                         const el = $(id);
                         if (el) el.addEventListener('input', formatearInput);
@@ -4097,7 +4110,8 @@ Generado por Sistema de Horarios version v6.02
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, mostrarStats, cerrarStats,
-                        cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario
+                        cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario,
+                        toggleBotonesHistorico
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4166,13 +4180,34 @@ Generado por Sistema de Horarios version v6.02
                     } catch (e) { }
                 }
 
+                function toggleBotonesHistorico() {
+                    const botones = $('botones-historico');
+                    const toggleBtn = $('btn-toggle-historico');
+                    const icon = toggleBtn.querySelector('use');
+
+                    botones.classList.toggle('expanded');
+                    toggleBtn.classList.toggle('rotated');
+
+                    // Cambiar icono entre + y -
+                    if (botones.classList.contains('expanded')) {
+                        icon.setAttribute('href', '#icon-cancelar');
+                    } else {
+                        icon.setAttribute('href', '#icon-plus');
+                    }
+
+                    // Guardar estado en localStorage
+                    try {
+                        localStorage.setItem('botonesHistoricoExpandido', botones.classList.contains('expanded'));
+                    } catch (e) { }
+                }
+
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
-                    cerrarAyuda, mostrarStats, cerrarStats, cambiarMesStats, generarReporte
+                    cerrarAyuda, mostrarStats, cerrarStats, cambiarMesStats, generarReporte, toggleBotonesHistorico
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4262,14 +4297,12 @@ Generado por Sistema de Horarios version v6.02
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.02
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.05
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
     la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) se eliminan los botones de limpiar campo en entrada y salida, ahora esa funcion la
-    cumple el mismo boton de pegar hora
-    2) el boton filtrar ahora limpia el mismo si ya hay uno activo
+    1) Se cambian el diseño de algunos botones
     -->
