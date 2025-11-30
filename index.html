@@ -883,9 +883,9 @@
             </div>
             <div class="card animated-card" style="animation-delay: 0.1s;">
                 <h2 class="no-margin"
-                    style="display: flex; justify-content: center; align-items: center; position: relative;"> <button
-                        onclick="DataManagement.agregarRegistro()" id="btn-agregar"
-                        style="all: unset; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text-main);">
+                    style="display: flex; justify-content: center; align-items: center; position: relative;">
+                    <button onclick="DataManagement.agregarRegistro()" id="btn-agregar"
+                        style="all: unset; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 60%; padding: 20px 0; margin: -20px 0; gap: 0.5rem; font-size: 1rem; font-weight: 600; color: var(--text-main);">
                         <svg class="icon">
                             <use href="#icon-save" />
                         </svg> Registrar
@@ -934,13 +934,66 @@
                     </div>
                 </div>
             </div>
-            <div class="card stats-card animated-card"
-                style="animation-delay: 0.2s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
-                <h2 class="no-margin" style="margin: 0; justify-content: center"> <svg class="icon">
+            <div class="card animated-card" style="animation-delay: 0.2s;">
+                <h2
+                    style="margin-bottom: 0; display: flex; justify-content: center; align-items: center; position: relative;">
+                    <svg class="icon">
                         <use href="#icon-stats" />
-                    </svg>
-                    Estadísticas
+                    </svg> Estadísticas
+                    <button class="icon-btn collapse-toggle" id="btn-toggle-stats" onclick="UILogic.toggleStats()"
+                        style="background: transparent; border: 1px solid var(--border); padding: 0.5rem; position: absolute; right: 0; width: 44px; height: 44px;">
+                        <svg class="icon" style="width: 1.2em; height: 1.2em;">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
                 </h2>
+                <div class="form-collapsible" id="form-stats">
+                    <div style="padding-top: 1rem;">
+                        <div class="form-group">
+                            <label>Período</label>
+                            <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"></select>
+                        </div>
+                        <div class="stats-grid custom-scroll" style="max-height: 300px; padding-right: 0.5rem;">
+                            <div class="stat-item">
+                                <div class="stat-label">Días trabajados</div>
+                                <div class="stat-value" id="stat-dias-trabajados">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Feriados</div>
+                                <div class="stat-value" id="stat-feriados">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Ausencias</div>
+                                <div class="stat-value" id="stat-ausencias">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Vacaciones</div>
+                                <div class="stat-value" id="stat-vacaciones">0</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Entrada promedio</div>
+                                <div class="stat-value" id="stat-entrada-promedio">--:--</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Salida promedio</div>
+                                <div class="stat-value" id="stat-salida-promedio">--:--</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-label">Promedio diario</div>
+                                <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
+                            </div>
+                        </div>
+
+                        <div class="btn-group" style="margin-top: 1rem;">
+                            <button class="btn-agregar" onclick="UILogic.generarReporte()">
+                                <svg class="icon">
+                                    <use href="#icon-download" />
+                                </svg>
+                                Reporte
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="card animated-card" style="animation-delay: 0.3s;">
@@ -958,7 +1011,8 @@
                 </button>
             </h2>
             <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 1rem;">
-                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 1.5rem">
+                <div
+                    style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 1.5rem">
                     <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
                         <svg class="icon">
                             <use href="#icon-filter" />
@@ -995,7 +1049,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.06</span> <!-- Version -->
+                <span class="version-text">v6.07</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1211,68 +1265,6 @@
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
-                    Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-    <div class="modal" id="modal-stats">
-        <div class="modal-content">
-            <h3>
-                <span class="modal-title-block">
-                    <svg class="icon">
-                        <use href="#icon-stats" />
-                    </svg>
-                    Estadísticas
-                </span>
-            </h3>
-
-            <div class="form-group">
-                <label>Período</label>
-                <select id="select-mes-stats" onchange="UILogic.cambiarMesStats()"
-                    style="width: 100%; padding: 0.75rem; border: 2px solid var(--border); border-radius: 8px; font-size: 1rem; background: var(--input-bg); color: var(--text-main);">
-                </select>
-            </div>
-
-            <div class="stats-grid custom-scroll">
-                <div class="stat-item">
-                    <div class="stat-label">Días trabajados</div>
-                    <div class="stat-value" id="stat-dias-trabajados">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Feriados</div>
-                    <div class="stat-value" id="stat-feriados">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Ausencias</div>
-                    <div class="stat-value" id="stat-ausencias">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Vacaciones</div>
-                    <div class="stat-value" id="stat-vacaciones">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Entrada promedio</div>
-                    <div class="stat-value" id="stat-entrada-promedio">--:--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Salida promedio</div>
-                    <div class="stat-value" id="stat-salida-promedio">--:--</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Promedio diario</div>
-                    <div class="stat-value" id="stat-promedio-diario">0h 0m</div>
-                </div>
-            </div>
-
-            <div class="btn-group" style="margin-top: 1.5rem;">
-                <button class="btn-backup" onclick="UILogic.generarReporte()">
-                    <svg class="icon">
-                        <use href="#icon-download" />
-                    </svg>
-                    Reporte
-                </button>
-                <button class="btn-cancel" onclick="UILogic.cerrarStats()">
                     Cerrar
                 </button>
             </div>
@@ -3694,21 +3686,6 @@
                     $('modal-importar').classList.remove('show');
                 }
 
-                function mostrarStats() {
-                    // Llenar el selector con los meses disponibles
-                    poblarSelectorMeses();
-
-                    // Actualizar estadísticas con el mes seleccionado (por defecto el actual)
-                    const selectMes = $('select-mes-stats');
-                    if (selectMes && selectMes.value) {
-                        actualizarEstadisticas(selectMes.value);
-                    } else {
-                        actualizarEstadisticas();
-                    }
-
-                    $('modal-stats').classList.add('show');
-                }
-
                 function poblarSelectorMeses() {
                     const selectMes = $('select-mes-stats');
                     if (!selectMes) return;
@@ -3998,7 +3975,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.05
+Generado por Sistema de Horarios version v6.07
 `
                     };
 
@@ -4032,10 +4009,6 @@ Generado por Sistema de Horarios version v6.05
                         console.error('Error generando reporte:', e);
                         mostrarToast('Error al generar reporte', 'error');
                     }
-                }
-
-                function cerrarStats() {
-                    $('modal-stats').classList.remove('show');
                 }
 
                 async function init() {
@@ -4082,6 +4055,11 @@ Generado por Sistema de Horarios version v6.05
                     } catch (e) { }
 
                     try {
+                        const statsExpandido = localStorage.getItem('statsExpandido') === 'true';
+                        if (statsExpandido) { toggleStats(); }
+                    } catch (e) { }
+
+                    try {
                         const botonesExpandido = localStorage.getItem('botonesHistoricoExpandido') === 'true';
                         if (botonesExpandido) {
                             toggleBotonesHistorico();
@@ -4109,9 +4087,8 @@ Generado por Sistema de Horarios version v6.05
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
-                        cerrarFiltros, mostrarAyuda, cerrarAyuda, mostrarStats, cerrarStats,
-                        cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario,
-                        toggleBotonesHistorico
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario,
+                        toggleBotonesHistorico, toggleStats
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4201,13 +4178,41 @@ Generado por Sistema de Horarios version v6.05
                     } catch (e) { }
                 }
 
+                function toggleStats() {
+                    const form = $('form-stats');
+                    const toggleBtn = $('btn-toggle-stats');
+                    const icon = toggleBtn.querySelector('use');
+
+                    form.classList.toggle('expanded');
+                    toggleBtn.classList.toggle('rotated');
+
+                    if (form.classList.contains('expanded')) {
+                        icon.setAttribute('href', '#icon-cancelar');
+                        // Aseguramos que los datos estén actualizados al abrir
+                        poblarSelectorMeses();
+                        const selectMes = $('select-mes-stats');
+                        if (selectMes && selectMes.value) {
+                            actualizarEstadisticas(selectMes.value);
+                        } else {
+                            actualizarEstadisticas();
+                        }
+                    } else {
+                        icon.setAttribute('href', '#icon-plus');
+                    }
+
+                    // Guardar estado en localStorage
+                    try {
+                        localStorage.setItem('statsExpandido', form.classList.contains('expanded'));
+                    } catch (e) { }
+                }
+
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
                     limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
-                    cerrarAyuda, mostrarStats, cerrarStats, cambiarMesStats, generarReporte, toggleBotonesHistorico
+                    cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4297,7 +4302,7 @@ Generado por Sistema de Horarios version v6.05
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.05
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.07
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
     la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
@@ -4305,4 +4310,5 @@ Generado por Sistema de Horarios version v6.05
     antiguos, da error de integridad >>>>>
 
     1) Se cambian el diseño de algunos botones
+    2) se reemplaza el modal estadisticas por un boton colapsable en la tarjeta en cuestion
     -->
