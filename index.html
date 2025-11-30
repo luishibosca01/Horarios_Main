@@ -303,8 +303,13 @@
             margin: 1rem auto 0 auto;
             width: 50px;
             height: 50px;
-            background: var(--c-gray-btn);
-            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        #btn-cargar-mas:hover {
+            transform: scale(1.05);
         }
 
         #btn-cargar-mas[style*="visibility: hidden"] {
@@ -675,6 +680,31 @@
         select:hover {
             border-color: var(--text-muted);
         }
+
+        /* --- Colapso de formulario --- */
+        .form-collapsible {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+        }
+
+        .form-collapsible.expanded {
+            max-height: 500px;
+            opacity: 1;
+        }
+
+        .collapse-toggle {
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .collapse-toggle.rotated {
+            transform: rotate(180deg);
+        }
     </style>
 </head>
 
@@ -850,47 +880,53 @@
                 <span class="toggle-hint" id="toggle-hint">Toca para ver la Semana</span>
             </div>
             <div class="card animated-card" style="animation-delay: 0.1s;">
-                <h2><svg class="icon">
-                        <use href="#icon-edit" />
-                    </svg> Registro</h2>
-                <div class="form-group">
-                    <label>Fecha</label>
-                    <div class="input-with-btn">
-                        <input type="date" id="fecha" />
-                        <button class="time-btn" onclick="UILogic.mostrarVacaciones()" title="Registrar lote"
-                            style="flex-shrink: 0;">
-                            <svg class="icon">
-                                <use href="#icon-calendar-simple" />
-                            </svg>
-                        </button>
+                <h2 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="display: flex; align-items: center; gap: 0.5rem;">
+                        <svg class="icon">
+                            <use href="#icon-edit" />
+                        </svg> Registro
+                    </span>
+                    <button class="icon-btn collapse-toggle" id="btn-toggle-form" onclick="UILogic.toggleFormulario()"
+                        style="background: transparent; border: 1px solid var(--border); padding: 0.5rem;">
+                        <svg class="icon" style="width: 1.2em; height: 1.2em;">
+                            <use href="#icon-plus" />
+                        </svg>
+                    </button>
+                </h2>
+                <div class="form-collapsible" id="form-registro">
+                    <div class="form-group">
+                        <label>Fecha</label>
+                        <div class="input-with-btn">
+                            <input type="date" id="fecha" />
+                            <button class="time-btn" onclick="UILogic.mostrarVacaciones()" title="Registrar lote"
+                                style="flex-shrink: 0;">
+                                <svg class="icon">
+                                    <use href="#icon-calendar-simple" />
+                                </svg>
+                            </button>
+                        </div>
+                        <span class="input-error" id="error-fecha">Fecha inválida</span>
                     </div>
-                    <span class="input-error" id="error-fecha">Fecha inválida</span>
-                </div>
-                <div class="form-group">
-                    <label>Entrada</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
-                        <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
-                                <use href="#icon-clock" />
-                            </svg></button>
-                        <button class="time-btn" onclick="UILogic.limpiarCampo('entrada')"><svg class="icon">
-                                <use href="#icon-broom" />
-                            </svg></button>
+                    <div class="form-group">
+                        <label>Entrada</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                            <button class="time-btn" onclick="UILogic.pegarHoraActual('entrada')"><svg class="icon">
+                                    <use href="#icon-clock" />
+                                </svg></button>
+                        </div>
+                        <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
                     </div>
-                    <span class="input-error" id="error-entrada">Formato inválido (HH:MM)</span>
-                </div>
-                <div class="form-group">
-                    <label>Salida</label>
-                    <div class="input-with-btn">
-                        <input type="text" id="salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
-                        <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
-                                <use href="#icon-clock" />
-                            </svg></button>
-                        <button class="time-btn" onclick="UILogic.limpiarCampo('salida')"><svg class="icon">
-                                <use href="#icon-broom" />
-                            </svg></button>
+                    <div class="form-group">
+                        <label>Salida</label>
+                        <div class="input-with-btn">
+                            <input type="text" id="salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                            <button class="time-btn" onclick="UILogic.pegarHoraActual('salida')"><svg class="icon">
+                                    <use href="#icon-clock" />
+                                </svg></button>
+                        </div>
+                        <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
                     </div>
-                    <span class="input-error" id="error-salida">Formato inválido (HH:MM)</span>
                 </div>
                 <button onclick="DataManagement.agregarRegistro()" id="btn-agregar">
                     <svg class="icon">
@@ -899,7 +935,7 @@
                 </button>
             </div>
             <div class="card stats-card animated-card"
-                style="animation-delay: 0.3s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
+                style="animation-delay: 0.2s; cursor: pointer; text-align: center;" onclick="UILogic.mostrarStats()">
                 <h2 style="margin: 0; justify-content: center">
                     <svg class="icon">
                         <use href="#icon-stats" />
@@ -910,7 +946,7 @@
         </div>
 
         <div class="right-column">
-            <div class="card animated-card" style="animation-delay: 0.2s;">
+            <div class="card animated-card" style="animation-delay: 0.3s;">
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                     <h2 style="margin-bottom: 0;">
@@ -937,10 +973,10 @@
                     </div>
                 </div>
                 <div id="lista-registros" class="custom-scroll"></div>
-                <button id="btn-cargar-mas"
-                    style="margin-top: 1rem; visibility: hidden; display: flex; justify-content: center; align-items: center;"
+                <button class="icon-btn" id="btn-cargar-mas"
+                    style="margin: 1rem auto 0 auto; visibility: hidden; width: 50px; height: 50px; background: transparent; border: 1px solid var(--border);"
                     onclick="DataManagement.cargarMasRegistros()" title="Cargar más registros">
-                    <svg class="icon" style="width: 1.5em; height: 1.5em;">
+                    <svg class="icon" style="width: 1.2em; height: 1.2em;">
                         <use href="#icon-plus" />
                     </svg>
                 </button>
@@ -957,7 +993,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.00</span> <!-- Version -->
+                <span class="version-text">v6.02</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1022,9 +1058,6 @@
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
                             <use href="#icon-clock" />
                         </svg></button>
-                    <button class="time-btn" onclick="UILogic.limpiarCampo('edit-entrada')"><svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg></button>
                 </div>
             </div>
             <div class="form-group">
@@ -1033,9 +1066,6 @@
                     <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
                     <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
                             <use href="#icon-clock" />
-                        </svg></button>
-                    <button class="time-btn" onclick="UILogic.limpiarCampo('edit-salida')"><svg class="icon">
-                            <use href="#icon-broom" />
                         </svg></button>
                 </div>
             </div>
@@ -2119,8 +2149,8 @@
                         const saved = await guardarYActualizar();
                         if (saved) {
                             const mensaje = usaHoraActual ?
-                                `Salida registrada con hora actual\n(entrada: ${registroExistente.entrada})` :
-                                `Salida ${s} agregada\n(entrada: ${registroExistente.entrada})`;
+                                `Salida registrada con hora actual \n(entrada: ${registroExistente.entrada})` :
+                                `Salida ${s} agregada \n(entrada: ${registroExistente.entrada})`;
                             UILogic.mostrarToast(mensaje, 'success');
                             UILogic.resetearBoton(btn);
                             $('fecha').value = UILogic.obtenerFechaHoy();
@@ -2740,14 +2770,32 @@
                     if (error) error.style.display = 'none';
                 }
 
+                let toastTimeout = null;
+
                 function mostrarToast(mensaje, tipo = 'info') {
                     const toast = $('toast');
                     const textoLimpio = S.sanitizeString(mensaje, 200);
+
+                    // Limpiar timeouts anteriores
+                    if (toastTimeout) {
+                        clearTimeout(toastTimeout);
+                        toastTimeout = null;
+                    }
+
+                    // Remover clase show si existe (para reset de animación)
+                    toast.classList.remove('show');
+
+                    // Actualizar contenido y tipo
                     toast.textContent = textoLimpio;
                     toast.className = `toast ${tipo}`;
+
+                    // Mostrar toast después de un pequeño delay (para permitir reset)
                     setTimeout(() => toast.classList.add('show'), 10);
-                    setTimeout(() => {
+
+                    // Programar ocultación
+                    toastTimeout = setTimeout(() => {
                         toast.classList.remove('show');
+                        toastTimeout = null;
                     }, 3000);
                 }
 
@@ -3546,11 +3594,20 @@
                 }
 
                 function pegarHoraActual(id) {
+                    const c = $(id);
+                    if (!c) return;
+
+                    // Si el campo tiene contenido, limpiarlo
+                    if (c.value.trim() !== '') {
+                        c.value = '';
+                        return;
+                    }
+
+                    // Si está vacío, pegar hora actual
                     const now = new Date();
                     const h = String(now.getHours()).padStart(2, '0');
                     const m = String(now.getMinutes()).padStart(2, '0');
-                    const c = $(id);
-                    if (c) c.value = `${h}:${m}`;
+                    c.value = `${h}:${m}`;
                 }
 
                 function limpiarCampo(id) {
@@ -3936,7 +3993,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema de Horarios version v6.00
+Generado por Sistema de Horarios version v6.02
 `
                     };
 
@@ -4012,6 +4069,12 @@ Generado por Sistema de Horarios version v6.00
                     }
 
                     $('fecha').value = obtenerFechaHoy();
+                    try {
+                        const formExpandido = localStorage.getItem('formularioExpandido') === 'true';
+                        if (formExpandido) {
+                            toggleFormulario();
+                        }
+                    } catch (e) { }
                     ['entrada', 'salida', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'].forEach(id => {
                         const el = $(id);
                         if (el) el.addEventListener('input', formatearInput);
@@ -4034,7 +4097,7 @@ Generado por Sistema de Horarios version v6.00
                         incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, mostrarStats, cerrarStats,
-                        cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones
+                        cambiarMesStats, generarReporte, mostrarVacaciones, cerrarVacaciones, toggleFormulario
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4060,6 +4123,13 @@ Generado por Sistema de Horarios version v6.00
                 }
 
                 function mostrarFiltros() {
+                    // Si hay filtro activo, limpiarlo directamente
+                    if (D.obtenerRegistrosFiltrados().length !== D.registros().length) {
+                        D.limpiarFiltros();
+                        return;
+                    }
+
+                    // Si no hay filtro, mostrar modal
                     $('modal-filtros').classList.add('show');
                 }
 
@@ -4073,6 +4143,27 @@ Generado por Sistema de Horarios version v6.00
 
                 function cerrarAyuda() {
                     $('modal-ayuda').classList.remove('show');
+                }
+
+                function toggleFormulario() {
+                    const form = $('form-registro');
+                    const toggleBtn = $('btn-toggle-form');
+                    const icon = toggleBtn.querySelector('use');
+
+                    form.classList.toggle('expanded');
+                    toggleBtn.classList.toggle('rotated');
+
+                    // Cambiar icono entre + y -
+                    if (form.classList.contains('expanded')) {
+                        icon.setAttribute('href', '#icon-cancelar');
+                    } else {
+                        icon.setAttribute('href', '#icon-plus');
+                    }
+
+                    // Guardar estado en localStorage
+                    try {
+                        localStorage.setItem('formularioExpandido', form.classList.contains('expanded'));
+                    } catch (e) { }
                 }
 
                 return {
@@ -4171,12 +4262,14 @@ Generado por Sistema de Horarios version v6.00
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.00
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.02
     // ====================================================================
     <<< Se crea una funcion de compatibilidad para "async function cargarConVerificacion"
     la cual debe ser removida dentro de una semana de hosteada, y descomentar la nueva.
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) varias mejoras en el boton registrar
+    1) se eliminan los botones de limpiar campo en entrada y salida, ahora esa funcion la
+    cumple el mismo boton de pegar hora
+    2) el boton filtrar ahora limpia el mismo si ya hay uno activo
     -->
