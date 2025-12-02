@@ -1374,12 +1374,11 @@
                     <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada</a></li>
                     <li class="indice-item"><a href="#ayuda-salida" class="indice-link">📤 Registrar salida</a></li>
                     <li class="indice-item"><a href="#ayuda-manual" class="indice-link">✏️ Fecha/Hora manual</a></li>
-                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Registrar rango
-                            (Vacaciones)</a></li>
+                    <li class="indice-item"><a href="#ayuda-rango" class="indice-link">📅 Registrar rango</a></li>
                     <li class="indice-item"><a href="#ayuda-borrar-rango" class="indice-link">🗑️ Borrar rango</a></li>
                     <li class="indice-item"><a href="#ayuda-break" class="indice-link">☕ Timer / Tiempo fuera</a></li>
                     <li class="indice-item"><a href="#ayuda-editar" class="indice-link">📝 Editar registro</a></li>
-                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Códigos especiales</a></li>
+                    <li class="indice-item"><a href="#ayuda-codigos" class="indice-link">🔢 Fechas especiales</a></li>
                     <li class="indice-item"><a href="#ayuda-extra" class="indice-link">⚙️ Funciones extra</a></li>
                 </ul>
 
@@ -1445,8 +1444,8 @@
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
 
-                <p id="ayuda-codigos"><strong>Códigos especiales (Feriados/Licencias)</strong></p>
-                <p>Si editas manualmente, usa estos horarios:</p>
+                <p id="ayuda-codigos"><strong>Fechas especiales (Feriados/Licencias/etc)</strong></p>
+                <p>Editando o agregando manualmente, usa estos horarios:</p>
                 <ul style="list-style: none; padding-left: 0.5rem;">
                     <li>🥳 <strong>Feriados:</strong> 00:00 a 00:00</li>
                     <li>✈️ <strong>Ausencias:</strong> 11:11 a 11:11</li>
@@ -1467,8 +1466,9 @@
                 </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
                 <br><br>
-                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA NO ESTÁ GARANTIZADO POR NADIE.
-                        EL CODIGO ESTA DISPONIBLE EN GITHUB PARA BAJARLO Y EDITARLO</strong></p>
+                <p><strong>LA DISPONIBILIDAD Y USABILIDAD DEL SISTEMA ESTÁ GARANTIZADO POR PINDONGA.
+                        EL CODIGO ESTA DISPONIBLE EN EL REPOSITORIO DE GITHUB PARA BAJAR, EDITAR Y 
+                        MEJORAR LIBREMENTE.</strong></p>
             </div>
             <div class="btn-group">
                 <button class="btn-cancel" onclick="UILogic.cerrarAyuda()">
@@ -1981,6 +1981,15 @@
 
                     let fechaActual = new Date(desde.replace(/-/g, '/') + ' 00:00:00');
                     const fechaFin = new Date(hasta.replace(/-/g, '/') + ' 00:00:00');
+                    const unDia = 1000 * 60 * 60 * 24;
+                    const diferenciaTiempo = Math.abs(fechaFin - fechaActual);
+                    const totalDias = Math.ceil(diferenciaTiempo / unDia) + 1; // +1 para incluir el día final
+                    const MAX_DIAS_LOTE = 60; // Límite de seguridad: 2 meses por operación
+
+                    if (totalDias > MAX_DIAS_LOTE) {
+                        UILogic.mostrarToast(`Por seguridad, el máximo es ${MAX_DIAS_LOTE} días por operación.`, 'error');
+                        return;
+                    }
                     const fechasARegistrar = [];
 
                     while (fechaActual <= fechaFin) {
@@ -2416,6 +2425,16 @@
                         const modal = $('modal-editar');
                         const btnEliminar = modal.querySelector('.btn-delete');
                         btnEliminar.disabled = true;
+                        const registroABorrar = registros.find(r => r.id === editandoId);
+                        const hoy = UILogic.obtenerFechaHoy();
+
+                        if (registroABorrar && registroABorrar.fecha === hoy) {
+                            // Si existe un timer activo, lo eliminamos
+                            if (localStorage.getItem('breakStartTime')) {
+                                localStorage.removeItem('breakStartTime');
+                                UILogic.mostrarToast('Timer detenido al borrar el registro', 'info');
+                            }
+                        }
 
                         registros = registros.filter(r => r.id !== editandoId);
                         HistoryManager.saveState(registros);
@@ -2427,6 +2446,8 @@
                         if (saved) {
                             UILogic.mostrarToast('Registro eliminado', 'success');
                             UILogic.cerrarEdicion();
+                            // Forzamos actualización del botón visualmente
+                            UILogic.actualizarEstadoBotonTimerMain();
                         }
                     }
                 }
@@ -2470,6 +2491,11 @@
 
                     if (!e && !s) {
                         // Si ambos campos están vacíos, eliminar el registro
+                        const registroABorrar = registros.find(r => r.id === editandoId);
+                        if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
+                            localStorage.removeItem('breakStartTime');
+                            UILogic.actualizarEstadoBotonTimerMain();
+                        }
                         registros = registros.filter(r => r.id !== editandoId);
                         HistoryManager.saveState(registros);
 
@@ -2563,12 +2589,10 @@
                         return;
                     }
 
-                    // --- CONFIRMACIÓN SIMPLE ---
                     const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\Esta accion se puede DESHACER antes de cerrar la pagina.`);
 
                     if (!confirmar) return;
-                    // --- FIN CONFIRMACIÓN SIMPLE ---
-
+                    localStorage.removeItem('breakStartTime');
                     registros = [];
                     registrosVisibles = 10;
 
@@ -3605,16 +3629,10 @@
                     const tituloEl = $('stats-titulo');
                     const hintEl = $('toggle-hint');
                     const bufferEl = $('stats-buffer');
-                    const fechaUltimoDia = new Date(ini.replace(/-/g, '/') + ' 00:00:00');
-                    fechaUltimoDia.setDate(fechaUltimoDia.getDate() + (diasHabilesConfig - 1));
-                    const ultimoDiaStr = `${fechaUltimoDia.getFullYear()}-${String(fechaUltimoDia.getMonth() + 1).padStart(2, '0')}-${String(fechaUltimoDia.getDate()).padStart(2, '0')}`;
-                    const registroFinSemana = registros.find(r => r.fecha === ultimoDiaStr);
-                    const semanaCerrada = registroFinSemana && registroFinSemana.salida && registroFinSemana.salida !== '';
 
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-                        // 3. Agregamos la condición !semanaCerrada para ocultarlo si ya terminamos
-                        if (bufferSemanal !== 0 && !semanaCerrada) {
+                        if (bufferSemanal !== 0) {
                             if (Math.abs(bufferSemanal) > 0.01) {
                                 const esPositivo = bufferSemanal > 0;
                                 const bufferIcono = esPositivo ? '✅' : '⚠️';
@@ -4259,6 +4277,7 @@ Generado por Sistema de Horarios version v6.16
                         // <--- 2. ACTIVAR EFECTO EN TARJETA
                         if (card) {
                             card.classList.add('timer-running');
+                            // Opcional: Cambiar título temporalmente
                             const titulo = card.querySelector('h2');
                             if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> Tiempo fuera...`;
                         }
@@ -4622,6 +4641,6 @@ Generado por Sistema de Horarios version v6.16
     Esto debido a que se cambió de hash utilizado a SHA256 y al momento de cargar los datos
     antiguos, da error de integridad >>>>>
 
-    1) agregado indice y estilos en el modal de informacion
+    1) mejoras en general de presentacion
 
     -->
