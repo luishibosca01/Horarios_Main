@@ -1252,6 +1252,12 @@
                 <label>Fecha</label>
                 <div class="input-with-btn">
                     <input type="date" id="edit-fecha" />
+                    <button class="time-btn" id="btn-lock-toggle" onclick="UILogic.toggleBloqueoEdicion()"
+                        title="Desbloquear edición">
+                        <svg class="icon">
+                            <use href="#icon-lock" />
+                        </svg>
+                    </button>
                 </div>
             </div>
             <div class="form-group">
@@ -2436,6 +2442,7 @@
                     $('edit-salida').value = r.salida || '';
                     $('edit-tiempo-fuera').value = r.tiempoFuera || '';
                     $('modal-editar').classList.add('show');
+                    UILogic.setBloqueoEdicion(true)
                 }
                 async function guardarEdicion() {
                     const r = registros.find(x => x.id === editandoId);
@@ -4354,6 +4361,39 @@ Generado por Sistema de Horarios
                     actualizarEstadoBotonTimerMain();
                 }
 
+                // --- Lógica de Bloqueo del Modal Editar ---
+                let edicionBloqueada = true;
+
+                function setBloqueoEdicion(bloqueado) {
+                    edicionBloqueada = bloqueado;
+
+                    const btnLock = $('btn-lock-toggle');
+                    if (btnLock) {
+                        const icon = btnLock.querySelector('use');
+                        icon.setAttribute('href', bloqueado ? '#icon-lock' : '#icon-lock-open');
+                        btnLock.title = bloqueado ? "Desbloquear edición" : "Bloquear edición";
+                        btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
+                    }
+
+                    const inputs = ['edit-fecha', 'edit-entrada', 'edit-salida', 'edit-tiempo-fuera'];
+                    inputs.forEach(id => {
+                        const el = $(id);
+                        if (el) el.disabled = bloqueado;
+                    });
+
+                    const modal = $('modal-editar');
+                    if (modal) {
+                        const botones = modal.querySelectorAll('button:not(#btn-lock-toggle):not(.btn-cancel)');
+                        botones.forEach(btn => {
+                            btn.disabled = bloqueado;
+                        });
+                    }
+                }
+
+                function toggleBloqueoEdicion() {
+                    setBloqueoEdicion(!edicionBloqueada);
+                }
+
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -4434,7 +4474,7 @@ Generado por Sistema de Horarios
                         incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
                         cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
                         cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion
                     };
                     window.DataManagement = {
                         agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
@@ -4558,7 +4598,7 @@ Generado por Sistema de Horarios
                     incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
-                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain,
+                    toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -4651,5 +4691,6 @@ Generado por Sistema de Horarios
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.19
     // ====================================================================
     1) Mejoras de codigo
+    2) agregado nuevamente el boton de bloqueo
 
     -->
