@@ -1239,7 +1239,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.27</span> <!-- Version -->
+                <span class="version-text">v6.28</span> <!-- Version -->
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -2804,9 +2804,11 @@
                         const hoy = UILogic.obtenerFechaHoy();
 
                         if (registroABorrar && registroABorrar.fecha === hoy) {
-                            // Si existe un timer activo, lo eliminamos
-                            if (localStorage.getItem('breakStartTime')) {
-                                localStorage.removeItem('breakStartTime');
+                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                            const storageKey = `breakStartTime_${perfilId}`;
+                            if (localStorage.getItem(storageKey)) {
+                                localStorage.removeItem(storageKey);
                                 UILogic.mostrarToast('Timer detenido al borrar el registro', 'info');
                             }
                         }
@@ -2892,7 +2894,10 @@
                         // Si ambos campos están vacíos, eliminar el registro
                         const registroABorrar = registros.find(r => r.id === editandoId);
                         if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
-                            localStorage.removeItem('breakStartTime');
+                            // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                            const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                            const storageKey = `breakStartTime_${perfilId}`;
+                            localStorage.removeItem(storageKey);
                             UILogic.actualizarEstadoBotonTimerMain();
                         }
                         registros = registros.filter(r => r.id !== editandoId);
@@ -3007,7 +3012,12 @@
                     const confirmar = confirm(`⚠️ ¿ESTÁS SEGURO?\n\nEsto eliminará TODOS los ${totalRegistros} registros \n\Esta accion se puede DESHACER antes de cerrar la pagina.`);
 
                     if (!confirmar) return;
-                    localStorage.removeItem('breakStartTime');
+
+                    // 🔧 LIMPIAR TIMER DEL PERFIL ACTUAL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
+                    localStorage.removeItem(storageKey);
+
                     registros = [];
                     registrosVisibles = 10;
 
@@ -4723,7 +4733,11 @@ Generado por Sistema de Horarios
 
                     const hoy = obtenerFechaHoy();
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
-                    const isRunning = localStorage.getItem('breakStartTime') !== null;
+
+                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
+                    const isRunning = localStorage.getItem(storageKey) !== null;
                     const icon = btn.querySelector('use');
 
                     // ... (lógica de bloqueo del botón existente) ...
@@ -4769,7 +4783,9 @@ Generado por Sistema de Horarios
                 }
 
                 async function toggleTimerBreakMain() {
-                    const storageKey = 'breakStartTime';
+                    // 🔧 CLAVE ESPECÍFICA POR PERFIL
+                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                    const storageKey = `breakStartTime_${perfilId}`;
                     const storedStart = localStorage.getItem(storageKey);
                     const hoy = obtenerFechaHoy();
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
@@ -5170,9 +5186,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.27
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.28
     // ====================================================================
-    1) agregado sistema de perfiles
+    1) cambio del funcionamiento del timer
 
 
     -->
