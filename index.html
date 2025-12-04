@@ -1868,6 +1868,34 @@
 
                 function inicializar() {
                     cargarPerfiles();
+
+                    // 🔧 MIGRACIÓN AUTOMÁTICA DE DATOS VIEJOS
+                    if (perfiles['default'] && perfiles['default'].registros.length === 0) {
+                        try {
+                            // Intentar cargar registros del sistema viejo
+                            const registrosViejos = localStorage.getItem('registros');
+                            if (registrosViejos) {
+                                const data = JSON.parse(registrosViejos);
+                                if (data.registros && Array.isArray(data.registros)) {
+                                    perfiles['default'].registros = data.registros;
+                                    console.log('✅ Migrados', data.registros.length, 'registros al perfil Principal');
+                                }
+                            }
+
+                            // Migrar configuración vieja
+                            const diasViejos = localStorage.getItem('diasHabiles');
+                            const horasViejas = localStorage.getItem('horasDiarias');
+
+                            if (diasViejos) perfiles['default'].diasHabiles = parseFloat(diasViejos);
+                            if (horasViejas) perfiles['default'].horasDiarias = parseFloat(horasViejas);
+
+                            // Guardar la migración
+                            guardarPerfiles();
+                        } catch (e) {
+                            console.error('Error en migración:', e);
+                        }
+                    }
+
                     actualizarSelector();
                     actualizarNombrePerfil();
                 }
