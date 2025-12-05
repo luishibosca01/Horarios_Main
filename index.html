@@ -849,35 +849,6 @@
             align-items: center;
         }
 
-        .header h1 {
-            font-size: 1.25rem;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* Nuevo: Selector de perfil */
-        #selector-perfil {
-            font-size: 1rem;
-            padding: 0.25rem 0.5rem;
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            background: var(--input-bg);
-            color: var(--text-main);
-            cursor: pointer;
-            max-width: 200px;
-        }
-
-        #selector-perfil:hover {
-            border-color: var(--text-muted);
-        }
-
-        #selector-perfil:focus {
-            outline: none;
-            border-color: var(--input-focus);
-        }
-
         /* Estilos para meses colapsables */
         .registro-mes-container {
             margin: 0;
@@ -919,6 +890,69 @@
             stroke-width: 2;
             flex-shrink: 0;
             transition: transform 0.3s ease;
+        }
+
+        /* Botón de perfil en el Header */
+        .header-profile-btn {
+            background: var(--input-bg);
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: auto;
+            /* Auto ancho */
+            max-width: 220px;
+        }
+
+        .header-profile-btn:hover {
+            border-color: var(--text-muted);
+            background: var(--bg-body);
+        }
+
+        .header-profile-btn span {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Lista de perfiles en el modal */
+        .perfil-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .btn-perfil-select {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 1rem;
+            text-align: left;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-perfil-select:hover {
+            border-color: var(--c-blue);
+            transform: scale(1.02);
+        }
+
+        .btn-perfil-select.activo {
+            border-color: var(--c-green);
+            background: rgba(96, 172, 148, 0.1);
+            /* Tinte verde suave */
+            font-weight: bold;
         }
     </style>
 </head>
@@ -1064,13 +1098,15 @@
         </symbol>
     </svg>
     <div class="header">
-        <h1>
+        <button class="header-profile-btn" onclick="UILogic.abrirSelectorPerfiles()">
             <svg class="icon">
                 <use href="#icon-clock" />
             </svg>
-            <select id="selector-perfil" onchange="PerfilManager.cambiarPerfil()">
-            </select>
-        </h1>
+            <span id="nombre-perfil-header">Cargando...</span>
+            <svg class="icon" style="font-size: 0.8em; margin-left: 2px;">
+                <use href="#icon-chevron-down" />
+            </svg>
+        </button>
         <div class="header-buttons">
             <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
                 title="Instalar aplicación">
@@ -1268,7 +1304,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.36</span>
+                <span class="version-text">v6.37</span>
             </h3>
 
             <div class="form-group">
@@ -1299,12 +1335,6 @@
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
             <div class="config-actions">
-                <button class="btn-group" onclick="UILogic.mostrarPerfiles()">
-                    <svg class="icon">
-                        <use href="#icon-lock" />
-                    </svg>
-                    Gestión de Perfiles
-                </button>
                 <button class="btn-group" onclick="UILogic.mostrarRespaldo()">
                     <svg class="icon">
                         <use href="#icon-save" />
@@ -1745,6 +1775,36 @@
             </div>
         </div>
     </div>
+    <div class="modal" id="modal-selector-perfiles">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-list" />
+                    </svg>
+                    Seleccionar Perfil
+                </span>
+            </h3>
+
+            <div id="lista-perfiles-botones" class="perfil-list-container">
+            </div>
+
+            <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                <button class="btn-group" onclick="UILogic.mostrarAdministracionPerfiles()">
+                    <svg class="icon">
+                        <use href="#icon-settings" />
+                    </svg>
+                    Administrar Perfiles
+                </button>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarSelectorPerfiles()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         (function () {
@@ -2000,7 +2060,7 @@
                         // Cargar perfiles existentes si los hay
                         perfiles = storedPerfiles ? JSON.parse(storedPerfiles) : {};
 
-                        // --- LÓGICA DE MIGRACIÓN MEJORADA ---
+                        // --- LÓGICA DE MIGRACIÓN  ---
                         // Verificamos si el perfil default está vacío o no existe
                         const esPerfilVacio = !perfiles['default'] || !perfiles['default'].registros || perfiles['default'].registros.length === 0;
 
@@ -2068,26 +2128,6 @@
                     } catch (e) { return false; }
                 }
 
-                // ... (El resto de funciones: actualizarSelector, actualizarNombrePerfil, cambiarPerfil, etc. quedan IGUAL) ...
-                // Asegúrate de copiar el resto de funciones del PerfilManager original aquí abajo
-                function actualizarSelector() {
-                    const selector = document.getElementById('selector-perfil');
-                    if (!selector) return;
-                    selector.innerHTML = '';
-                    const perfilesOrdenados = Object.entries(perfiles).sort((a, b) => {
-                        if (a[0] === 'default') return -1;
-                        if (b[0] === 'default') return 1;
-                        return a[1].nombre.localeCompare(b[1].nombre);
-                    });
-                    perfilesOrdenados.forEach(([id, perfil]) => {
-                        const option = document.createElement('option');
-                        option.value = id;
-                        option.textContent = perfil.nombre;
-                        if (id === perfilActual) option.selected = true;
-                        selector.appendChild(option);
-                    });
-                }
-
                 function actualizarNombrePerfil() {
                     const nombreInput = document.getElementById('nombre-perfil-actual');
                     if (nombreInput && perfiles[perfilActual]) nombreInput.value = perfiles[perfilActual].nombre;
@@ -2139,10 +2179,59 @@
                     if (window.UILogic) window.UILogic.mostrarToast(`Perfil "${nombre}" creado`, 'success');
                 }
 
-                function eliminarPerfilActual() {
-                    if (perfilActual === 'default') return;
-                    const confirm = window.confirm('¿Eliminar perfil actual?');
-                    if (!confirm) return;
+                function actualizarSelector() {
+                    // Actualiza el TEXTO del botón del header en lugar del select
+                    const btnTexto = document.getElementById('nombre-perfil-header');
+                    if (btnTexto && perfiles[perfilActual]) {
+                        btnTexto.textContent = perfiles[perfilActual].nombre;
+                    }
+                }
+
+                function obtenerListaPerfiles() {
+                    return Object.entries(perfiles).map(([id, perfil]) => ({
+                        id: id,
+                        nombre: perfil.nombre,
+                        esActual: id === perfilActual
+                    })).sort((a, b) => {
+                        if (a.id === 'default') return -1;
+                        if (b.id === 'default') return 1;
+                        return a.nombre.localeCompare(b.nombre);
+                    });
+                }
+
+                function cambiarPerfil(nuevoId) { // Modificado para aceptar ID directo
+                    if (!nuevoId) return; // Si viene del select antiguo (ya no existe)
+                    if (nuevoId === perfilActual) return;
+
+                    guardarDatosPerfilActual();
+                    perfilActual = nuevoId;
+                    localStorage.setItem('perfilActivo', perfilActual);
+                    location.reload();
+                }
+
+                async function eliminarPerfilActual() {
+                    if (perfilActual === 'default') {
+                        if (window.UILogic) window.UILogic.mostrarToast('No se puede eliminar el perfil Principal', 'error');
+                        return;
+                    }
+
+                    const nombre = perfiles[perfilActual].nombre;
+                    const confirmacion = window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${nombre}"?\n\nEsta acción NO se puede deshacer.`);
+
+                    if (!confirmacion) return;
+
+                    // Preguntar por Backup
+                    const deseaBackup = window.confirm(`Antes de eliminar "${nombre}":\n\n¿Deseas descargar una copia de seguridad de estos datos?`);
+
+                    if (deseaBackup) {
+                        // Usamos la función de exportar existente
+                        if (window.DataManagement) {
+                            window.DataManagement.exportarJSON();
+                            // Damos un pequeño tiempo para que inicie la descarga antes de borrar
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+
                     delete perfiles[perfilActual];
                     perfilActual = 'default';
                     localStorage.setItem('perfilActivo', perfilActual);
@@ -2166,7 +2255,8 @@
                 return {
                     inicializar, cambiarPerfil, crearPerfil, eliminarPerfilActual,
                     guardarDatosPerfilActual, cargarDatosPerfilActual,
-                    obtenerPerfilActual, obtenerDatosPerfil, renombrarPerfilActual
+                    obtenerPerfilActual, obtenerDatosPerfil, renombrarPerfilActual,
+                    obtenerListaPerfiles
                 };
 
             })(SecurityAndUtils);
@@ -5194,6 +5284,45 @@ Generado por Sistema de Horarios
                     $('modal-config').classList.add('show');
                 }
 
+                function abrirSelectorPerfiles() {
+                    const lista = document.getElementById('lista-perfiles-botones');
+                    lista.innerHTML = ''; // Limpiar
+
+                    const perfiles = window.PerfilManager.obtenerListaPerfiles();
+
+                    perfiles.forEach(p => {
+                        const btn = document.createElement('button');
+                        btn.className = `btn-perfil-select ${p.esActual ? 'activo' : ''}`;
+
+                        // Icono check si es activo, o usuario si no
+                        const iconoHTML = p.esActual
+                            ? '<svg class="icon" style="color:var(--c-green)"><use href="#icon-save"/></svg>' // Check visual (usando save como check temporal o puedes agregar icono check)
+                            : '<svg class="icon"><use href="#icon-stats"/></svg>'; // Icono genérico
+
+                        btn.innerHTML = `
+                <span>${p.nombre}</span>
+                ${p.esActual ? '<span style="font-size:0.8rem; color:var(--c-green)">Actual</span>' : ''}
+            `;
+
+                        btn.onclick = () => {
+                            window.PerfilManager.cambiarPerfil(p.id);
+                        };
+
+                        lista.appendChild(btn);
+                    });
+
+                    document.getElementById('modal-selector-perfiles').classList.add('show');
+                }
+
+                function cerrarSelectorPerfiles() {
+                    document.getElementById('modal-selector-perfiles').classList.remove('show');
+                }
+
+                function mostrarAdministracionPerfiles() {
+                    cerrarSelectorPerfiles();
+                    mostrarPerfiles(); // Llama a la función existente que abre modal-perfiles
+                }
+
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -5227,7 +5356,8 @@ Generado por Sistema de Horarios
                         cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
                         actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
                         actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
-                        cerrarRespaldo, mostrarRespaldo, init,
+                        cerrarRespaldo, mostrarRespaldo, abrirSelectorPerfiles, cerrarSelectorPerfiles, mostrarAdministracionPerfiles,
+                        init,
                     };
 
                     // 2. CARGAR CONFIGURACIÓN
@@ -5361,7 +5491,8 @@ Generado por Sistema de Horarios
                     incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
-                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles
+                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, abrirSelectorPerfiles, 
+                    cerrarSelectorPerfiles, mostrarAdministracionPerfiles
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -5451,9 +5582,10 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.36
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.37
     // ====================================================================
-    1) se aplican correciones para la migracion de registros, desde la 6.25
+    1) agregado nuevo selector de 
 
 
+    
     -->
