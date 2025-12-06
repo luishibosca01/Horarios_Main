@@ -102,6 +102,11 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            /* AGREGADO: */
+            flex-shrink: 0;
+            /* Impide que el título se achique o se corra */
+            margin-right: auto;
+            /* Empuja el resto de elementos a la derecha */
         }
 
         .card,
@@ -522,7 +527,7 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            backdrop-filter: blur(2px);
+            backdrop-filter: blur(20px);
             transition: all 0.3s;
         }
 
@@ -908,8 +913,15 @@
             cursor: pointer;
             transition: all 0.2s;
             width: auto;
-            /* Auto ancho */
-            max-width: 220px;
+            max-width: 160px;
+        }
+
+        @media (min-width: 400px) {
+
+            /* Opcional: Hacerlo más g grandes */
+            .header-profile-btn {
+                max-width: 200px;
+            }
         }
 
         .header-profile-btn:hover {
@@ -921,6 +933,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            display: block;
         }
 
         /* Lista de perfiles en el modal */
@@ -1172,16 +1185,22 @@
         </symbol>
     </svg>
     <div class="header">
-        <button class="header-profile-btn" onclick="UILogic.abrirSelectorPerfiles()">
+        <h1 style="margin: 0; font-size: 1.25rem; color: var(--text-main);">
             <svg class="icon">
-                <use href="#icon-briefcase" />
-            </svg>
-            <span id="nombre-perfil-header">Cargando...</span>
-            <svg class="icon" style="font-size: 0.8em; margin-left: 2px;">
-                <use href="#icon-chevron-down" />
-            </svg>
-        </button>
-        <div class="header-buttons">
+                <use href="#icon-clock" />
+            </svg> Horarios
+        </h1>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button class="header-profile-btn" onclick="UILogic.abrirSelectorPerfiles()">
+                <svg class="icon">
+                    <use href="#icon-briefcase" />
+                </svg>
+                <span id="nombre-perfil-header">Cargando...</span>
+                <svg class="icon" style="font-size: 0.8em; margin-left: 2px;">
+                    <use href="#icon-chevron-down" />
+                </svg>
+            </button>
+
             <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
                 title="Instalar aplicación">
                 <svg class="icon">
@@ -1394,17 +1413,25 @@
             <div class="form-group">
                 <label>Horas diarias</label>
                 <div class="input-number-group">
-                    <input type="number" id="config-horas-diarias" min="0" max="24" step="0.5" readonly /> <button
-                        class="btn-increment" onclick="UILogic.incrementarHorasDiarias()">+</button>
-                    <button class="btn-increment" onclick="UILogic.decrementarHorasDiarias()">−</button>
+                    <input type="number" id="config-horas-diarias" min="0" max="24" step="0.5" readonly />
+                    <button class="btn-increment" onmousedown="UILogic.iniciarCambioHoras(0.5)"
+                        onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
+                        ontouchstart="UILogic.iniciarCambioHoras(0.5)" ontouchend="UILogic.detenerCambio()">+</button>
+                    <button class="btn-increment" onmousedown="UILogic.iniciarCambioHoras(-0.5)"
+                        onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
+                        ontouchstart="UILogic.iniciarCambioHoras(-0.5)" ontouchend="UILogic.detenerCambio()">−</button>
                 </div>
             </div>
             <div class="form-group">
                 <label>Días hábiles por semana</label>
                 <div class="input-number-group">
                     <input type="number" id="config-dias-habiles" min="1" max="7" step="1" readonly />
-                    <button class="btn-increment" onclick="UILogic.incrementarDiasHabiles()">+</button>
-                    <button class="btn-increment" onclick="UILogic.decrementarDiasHabiles()">−</button>
+                    <button class="btn-increment" onmousedown="UILogic.iniciarCambioDias(1)"
+                        onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
+                        ontouchstart="UILogic.iniciarCambioDias(1)" ontouchend="UILogic.detenerCambio()">+</button>
+                    <button class="btn-increment" onmousedown="UILogic.iniciarCambioDias(-1)"
+                        onmouseup="UILogic.detenerCambio()" onmouseleave="UILogic.detenerCambio()"
+                        ontouchstart="UILogic.iniciarCambioDias(-1)" ontouchend="UILogic.detenerCambio()">−</button>
                 </div>
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
@@ -2114,7 +2141,7 @@
             // PERFIL MANAGER MODULE
             // ====================================================================
             const PerfilManager = (function (S) {
-                const MAX_PERFILES = 5;
+                const MAX_PERFILES = 5; // cantidad maxima de perfiles permitida (1 de 3)
                 let perfilActual = 'default';
                 let perfiles = {};
 
@@ -4769,41 +4796,70 @@
                     }
                 }
 
-                function incrementarHorasDiarias() {
-                    let valorActual = parseFloat($('config-horas-diarias').value);
-                    if (isNaN(valorActual)) valorActual = D.horasDiarias();
-                    let nuevoValor = valorActual + 0.5;
-                    if (nuevoValor > 24) nuevoValor = 24;
-                    $('config-horas-diarias').value = nuevoValor;
-                    actualizarFeedbackConfig();
+                // Sistema de mantener presionado para incrementar/decrementar
+                let intervaloPulsacion = null;
+                let timeoutInicial = null;
+
+                function iniciarCambioHoras(incremento) {
+                    // Cambio inmediato al presionar
+                    cambiarHorasDiarias(incremento);
+
+                    // Esperar 500ms antes de iniciar repetición
+                    timeoutInicial = setTimeout(() => {
+                        intervaloPulsacion = setInterval(() => {
+                            cambiarHorasDiarias(incremento);
+                        }, 100); // Repetir cada 100ms
+                    }, 500);
                 }
 
-                function decrementarHorasDiarias() {
+                function iniciarCambioDias(incremento) {
+                    // Cambio inmediato al presionar
+                    cambiarDiasHabiles(incremento);
+
+                    // Esperar 500ms antes de iniciar repetición
+                    timeoutInicial = setTimeout(() => {
+                        intervaloPulsacion = setInterval(() => {
+                            cambiarDiasHabiles(incremento);
+                        }, 150); // Repetir cada 150ms (más lento para días)
+                    }, 500);
+                }
+
+                function detenerCambio() {
+                    if (timeoutInicial) {
+                        clearTimeout(timeoutInicial);
+                        timeoutInicial = null;
+                    }
+                    if (intervaloPulsacion) {
+                        clearInterval(intervaloPulsacion);
+                        intervaloPulsacion = null;
+                    }
+                }
+
+                function cambiarHorasDiarias(incremento) {
                     let valorActual = parseFloat($('config-horas-diarias').value);
                     if (isNaN(valorActual)) valorActual = D.horasDiarias();
-                    let nuevoValor = valorActual - 0.5;
+                    let nuevoValor = valorActual + incremento;
+                    if (nuevoValor > 24) nuevoValor = 24;
                     if (nuevoValor < 0) nuevoValor = 0;
                     $('config-horas-diarias').value = nuevoValor;
                     actualizarFeedbackConfig();
                 }
 
-                function incrementarDiasHabiles() {
+                function cambiarDiasHabiles(incremento) {
                     let valorActual = parseFloat($('config-dias-habiles').value);
                     if (isNaN(valorActual)) valorActual = D.diasHabiles();
-                    let nuevoValor = valorActual + 1;
+                    let nuevoValor = valorActual + incremento;
                     if (nuevoValor > 7) nuevoValor = 7;
-                    $('config-dias-habiles').value = nuevoValor;
-                    actualizarFeedbackConfig();
-                }
-
-                function decrementarDiasHabiles() {
-                    let valorActual = parseFloat($('config-dias-habiles').value);
-                    if (isNaN(valorActual)) valorActual = D.diasHabiles();
-                    let nuevoValor = valorActual - 1;
                     if (nuevoValor < 1) nuevoValor = 1;
                     $('config-dias-habiles').value = nuevoValor;
                     actualizarFeedbackConfig();
                 }
+
+                // Funciones legacy para compatibilidad
+                function incrementarHorasDiarias() { cambiarHorasDiarias(0.5); }
+                function decrementarHorasDiarias() { cambiarHorasDiarias(-0.5); }
+                function incrementarDiasHabiles() { cambiarDiasHabiles(1); }
+                function decrementarDiasHabiles() { cambiarDiasHabiles(-1); }
 
                 function mostrarConfig() {
                     $('config-dias-habiles').value = D.diasHabiles();
@@ -5470,8 +5526,8 @@ Generado por Sistema de Horarios
 
                     const perfiles = JSON.parse(localStorage.getItem('perfiles') || '{}');
 
-                    if (Object.keys(perfiles).length >= 5) {
-                        mostrarToast('Máximo de perfiles alcanzado (5)', 'error');
+                    if (Object.keys(perfiles).length >= 5) { //Cantidad maxima de perfiles permitida (2 de 3)
+                        mostrarToast('Máximo de perfiles alcanzado (5)', 'error'); //Mensaje de cantidad maxima perfiles (3 de 3)
                         return;
                     }
 
@@ -5699,7 +5755,7 @@ Generado por Sistema de Horarios
                         actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
                         cerrarRespaldo, mostrarRespaldo, abrirSelectorPerfiles, cerrarSelectorPerfiles,
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
-                        crearPerfilDesdeSelector, renderizarListaPerfiles
+                        crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio
                     };
 
                     // 2. CARGAR CONFIGURACIÓN
@@ -5835,7 +5891,8 @@ Generado por Sistema de Horarios
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
                     actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, abrirSelectorPerfiles,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil,
-                    eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles
+                    eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles,
+                    iniciarCambioHoras, iniciarCambioDias, detenerCambio
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -5927,7 +5984,9 @@ Generado por Sistema de Horarios
 <!--// ====================================================================
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.40
     // ====================================================================
-    1) optimizacion de codigo
+    1) Se agrega mantener presionado para cambiar los valores de horas y dias objetivo
+    2) cambios en el header
+    3) cambios en el limite que ocupa el selector del header
 
 
     
