@@ -63,6 +63,10 @@
             --bg-progress-bar: rgba(255, 255, 255, 0.2);
         }
 
+        body.modal-open {
+            overflow: hidden !important;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -342,6 +346,10 @@
             height: 44px;
             background: transparent;
             color: var(--text-main);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
 
         .icon-btn:hover,
@@ -527,7 +535,7 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px);
             transition: all 0.3s;
         }
 
@@ -1667,7 +1675,6 @@
             </h3>
             <div class="ayuda-scroll-container"
                 style="text-align: left; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; max-height: 400px; overflow-y: auto; padding-right: 5px;">
-
                 <p><strong id="inicio-ayuda">Temas de ayuda:</strong></p>
                 <ul class="indice-lista">
                     <li class="indice-item"><a href="#ayuda-entrada" class="indice-link">📥 Registrar entrada</a></li>
@@ -5779,7 +5786,7 @@ Generado por Sistema de Horarios
                     };
                     window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
                     window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
-                    window.PerfilManager = PerfilManager; // <--- AHORA ESTÁ AQUÍ ARRIBA
+                    window.PerfilManager = PerfilManager;
 
                     window.UILogic = {
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
@@ -5795,6 +5802,32 @@ Generado por Sistema de Horarios
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio
                     };
+
+                    // =========================================================
+                    // INICIO SISTEMA AUTOMÁTICO DE BLOQUEO DE SCROLL
+                    // =========================================================
+                    const modals = document.querySelectorAll('.modal');
+                    const scrollObserver = new MutationObserver(() => {
+                        const algunAbierto = document.querySelectorAll('.modal.show').length > 0;
+                        if (algunAbierto) {
+                            // Calcular cuánto mide la barra de scroll
+                            const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+                            document.body.style.paddingRight = `${scrollbarWidth}px`; // Compensa el espacio
+                            document.body.classList.add('modal-open');
+                        } else {
+                            document.body.classList.remove('modal-open');
+                            document.body.style.paddingRight = ''; // Quita la compensación
+                        }
+                    });
+
+                    modals.forEach(modal => {
+                        // Observamos cambios en la clase 'show' de cada modal
+                        scrollObserver.observe(modal, { attributes: true, attributeFilter: ['class'] });
+                    });
+
+                    // =========================================================
+                    // FIN SISTEMA AUTOMÁTICO DE BLOQUEO DE SCROLL
+                    // =========================================================
 
                     // 2. CARGAR CONFIGURACIÓN
                     const config = D.cargarConfiguracion();
@@ -5837,7 +5870,7 @@ Generado por Sistema de Horarios
                         if (el) el.addEventListener('input', formatearInput);
                     });
 
-                    // 5. RESTAURAR ESTADO VISUAL (Con protección try-catch para evitar crash si moviste cosas)
+                    // 5. RESTAURAR ESTADO VISUAL
                     try {
                         if (localStorage.getItem('formularioExpandido') === 'true') toggleFormulario();
                         if (localStorage.getItem('statsExpandido') === 'true') toggleStats();
@@ -5939,25 +5972,25 @@ Generado por Sistema de Horarios
         })();
     </script>
     <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(registration => {
-                    console.log('✅ SW registrado:', registration.scope);
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // Lógica visual para avisar al usuario
-                                if (window.UILogic) UILogic.mostrarToast('Nueva versión disponible. Recarga la página.', 'info');
-                            }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('✅ SW registrado:', registration.scope);
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Lógica visual para avisar al usuario
+                                    if (window.UILogic) UILogic.mostrarToast('Nueva versión disponible. Recarga la página.', 'info');
+                                }
+                            });
                         });
-                    });
-                })
-                .catch(err => console.error('❌ Error SW:', err));
-        });
-    }
-</script>
+                    })
+                    .catch(err => console.error('❌ Error SW:', err));
+            });
+        }
+    </script>
 </body>
 
 </html>
@@ -5966,6 +5999,7 @@ Generado por Sistema de Horarios
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.43
     // ====================================================================
     1) cambio en el codigo de service worker
+    2) cambios en el boton incrementar decrementar horas dias, fix seleccion
 
 
     
