@@ -1691,8 +1691,13 @@
                 <p id="ayuda-rango"><strong>Vacaciones y Lotes</strong></p>
                 <p>Toca el botón <svg class="icon">
                         <use href="#icon-calendar-simple" />
-                    </svg> junto a la fecha. Podrás registrar (o borrar) múltiples días simultáneamente como Vacaciones,
-                    Ausencias o Feriados.</p>
+                    </svg> junto a la fecha.</p>
+                <ul style="padding-left: 1.5rem;">
+                    <li><strong>Registro rápido:</strong> Sin llenar fechas, toca <strong>Registrar</strong> para marcar
+                        HOY como el tipo seleccionado (Feriado, Ausencia o Vacaciones).</li>
+                    <li><strong>Registro por lote:</strong> Llena "Desde" y "Hasta" para registrar (o borrar) múltiples
+                        días simultáneamente.</li>
+                </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
                 <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
@@ -1774,9 +1779,9 @@
             <div class="form-group">
                 <label>Tipo de registro</label>
                 <select id="vacaciones-tipo" onchange="UILogic.actualizarBotonesVacaciones()">
-                    <option value="vacaciones">🏖️ Vacaciones (22:22)</option>
-                    <option value="ausencia">✈️ Ausencia/Licencia (11:11)</option>
                     <option value="feriado">🥳 Feriados (00:00)</option>
+                    <option value="ausencia">✈️ Ausencia/Licencia (11:11)</option>
+                    <option value="vacaciones">🏖️ Vacaciones (22:22)</option>
                     <option value="normal">🕒 Normales (borrar)</option>
                 </select>
             </div>
@@ -2534,7 +2539,7 @@
                             if (data.hash) {
                                 const hashCalculado = await S.calcularHashSHA256(data.registros);
 
-                                // ✅ Usar comparación segura contra timing attacks
+                                // comparación segura contra timing attacks
                                 if (!S.constantTimeCompare(hashCalculado, data.hash)) {
                                     console.warn('⚠️ Integridad comprometida');
                                     UILogic.mostrarToast('Advertencia de integridad', 'warning');
@@ -2557,6 +2562,13 @@
                         const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
                         const tipo = $('vacaciones-tipo').value;
 
+                        // --- NUEVO: Si ambos campos están vacíos, usar fecha actual ---
+                        if (!desde && !hasta) {
+                            const fechaHoy = UILogic.obtenerFechaHoy();
+                            return registrarDiaEspecial(fechaHoy, tipo);
+                        }
+
+                        // --- Validaciones para rangos ---
                         if (!S.validarFechaSegura(desde) || !S.validarFechaSegura(hasta)) {
                             UILogic.mostrarToast('Fechas inválidas', 'error');
                             return;
@@ -2591,8 +2603,8 @@
                         const fechaFin = new Date(hasta.replace(/-/g, '/') + ' 00:00:00');
                         const unDia = 1000 * 60 * 60 * 24;
                         const diferenciaTiempo = Math.abs(fechaFin - fechaActual);
-                        const totalDias = Math.ceil(diferenciaTiempo / unDia) + 1; // +1 para incluir el día final
-                        const MAX_DIAS_LOTE = 60; // Límite de seguridad: 2 meses por operación
+                        const totalDias = Math.ceil(diferenciaTiempo / unDia) + 1;
+                        const MAX_DIAS_LOTE = 60;
 
                         if (totalDias > MAX_DIAS_LOTE) {
                             UILogic.mostrarToast(`Por seguridad, el máximo es ${MAX_DIAS_LOTE} días por operación.`, 'error');
@@ -2648,10 +2660,78 @@
                         }
                         if (saved) {
                             const tipoTexto = tipo === 'vacaciones' ? 'Vacaciones' : tipo === 'ausencia' ? 'Ausencias' : 'Feriados';
-                            UILogic.mostrarToast(`✅ ${nuevosRegistros.length} días registrados como ${tipoTexto}`, 'success');
+                            UILogic.mostrarToast(`${nuevosRegistros.length} días registrados como ${tipoTexto}`, 'success');
                             UILogic.cerrarVacaciones();
                             $('vacaciones-fecha-desde').value = '';
                             $('vacaciones-fecha-hasta').value = '';
+                        }
+                    }
+
+                    // --- NUEVA FUNCIÓN AUXILIAR ---
+                    async function registrarDiaEspecial(fecha, tipo) {
+                        // Verificar si ya existe un registro para hoy
+                        const registroExistente = registros.find(r => r.fecha === fecha);
+
+                        if (registroExistente) {
+                            UILogic.mostrarToast('Ya existe un registro para hoy', 'warning');
+                            return;
+                        }
+
+                        // Determinar valores según tipo
+                        let entrada, salida, tipoTexto;
+                        switch (tipo) {
+                            case 'vacaciones':
+                                entrada = '22:22';
+                                salida = '22:22';
+                                tipoTexto = '🏖️ Vacaciones';
+                                break;
+                            case 'ausencia':
+                                entrada = '11:11';
+                                salida = '11:11';
+                                tipoTexto = '✈️ Ausencia';
+                                break;
+                            case 'feriado':
+                                entrada = '00:00';
+                                salida = '00:00';
+                                tipoTexto = '🥳 Feriado';
+                                break;
+                            default:
+                                UILogic.mostrarToast('Tipo inválido', 'error');
+                                return;
+                        }
+
+                        // Verificar límite
+                        if (registros.length >= S.SECURITY_LIMITS.MAX_REGISTROS) {
+                            UILogic.mostrarToast('Límite de registros alcanzado', 'error');
+                            return;
+                        }
+
+                        // Crear registro
+                        const nuevoId = S.generarIDSeguro();
+                        const t = calcularHoras(entrada, salida, null);
+
+                        registros.push({
+                            id: nuevoId,
+                            fecha: fecha,
+                            entrada: entrada,
+                            salida: salida,
+                            tiempoFuera: null,
+                            horas: t?.horas || 0,
+                            minutos: t?.minutos || 0,
+                            total: t?.total || 0
+                        });
+
+                        registros.sort((a, b) => {
+                            if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                            return (b.entrada || '').localeCompare(a.entrada || '');
+                        });
+
+                        HistoryManager.saveState(registros);
+                        const saved = await guardarYActualizar(true, nuevoId);
+
+                        if (saved) {
+                            UILogic.mostrarToast(`Hoy registrado como ${tipoTexto}`, 'success');
+                            UILogic.cerrarVacaciones();
                         }
                     }
 
@@ -2672,7 +2752,7 @@
 
                         let entrada, salida, tipoTexto;
 
-                        // ✅ NUEVO: Agregar caso para "normal"
+                        // casos
                         switch (tipo) {
                             case 'vacaciones':
                                 entrada = '22:22';
@@ -2700,7 +2780,7 @@
                                 return;
                         }
 
-                        // ✅ LÓGICA DIFERENTE PARA NORMALES
+                        // LÓGICA DIFERENTE PARA NORMALES
                         let registrosAEliminar;
 
                         if (tipo === 'normal') {
@@ -2738,7 +2818,7 @@
                         }
 
                         if (saved) {
-                            UILogic.mostrarToast(`✅ ${registrosAEliminar.length} registro(s) de ${tipoTexto} eliminados`, 'success');
+                            UILogic.mostrarToast(`${registrosAEliminar.length} registro(s) de ${tipoTexto} eliminados`, 'success');
                             UILogic.cerrarVacaciones();
                             $('vacaciones-fecha-desde').value = '';
                             $('vacaciones-fecha-hasta').value = '';
@@ -3699,6 +3779,7 @@
                         obtenerRegistrosFiltrados,
                         registrarVacaciones,
                         borrarPeriodo,
+                        registrarDiaEspecial, // <--- AGREGAR ESTA LÍNEA
                         undoAction: function () {
                             const prevState = HistoryManager.undo();
                             if (prevState) {
@@ -3715,7 +3796,6 @@
                                 UILogic.mostrarToast('Rehecho', 'info');
                             }
                         }
-
                     };
 
                 })(SecurityAndUtils);
@@ -5171,7 +5251,7 @@ Generado por Sistema de Horarios
                             document.body.removeChild(a);
                             URL.revokeObjectURL(url);
 
-                            mostrarToast('✅ Reporte generado', 'success');
+                            mostrarToast('Reporte generado', 'success');
                         } catch (e) {
                             console.error('Error generando reporte:', e);
                             mostrarToast('Error al generar reporte', 'error');
@@ -5298,7 +5378,7 @@ Generado por Sistema de Horarios
                             localStorage.removeItem(storageKey);
                             await D.guardarYActualizar(true, registroHoy.id); // Guardamos y refrescamos UI
 
-                            mostrarToast(`✅ Se descontaron ${minutosTranscurridos} min al registro de hoy`, 'success');
+                            mostrarToast(`Se descontaron ${minutosTranscurridos} min al registro de hoy`, 'success');
                         }
 
                         actualizarEstadoBotonTimerMain();
@@ -5680,13 +5760,26 @@ Generado por Sistema de Horarios
                         PerfilManager.inicializar();
 
                         window.DataManagement = {
-                            agregarRegistro: D.agregarRegistro, guardarConfig: D.guardarConfig, exportarJSON: D.exportarJSON,
-                            mostrarImportar: mostrarImportar, importarDatos: D.importarDatos, borrarTodoHistorial: D.borrarTodoHistorial,
-                            guardarEdicion: D.guardarEdicion, eliminarRegistroActual: D.eliminarRegistroActual,
-                            undoAction: D.undoAction, redoAction: D.redoAction, aplicarFiltros: D.aplicarFiltros,
-                            limpiarFiltros: D.limpiarFiltros, registrarVacaciones: D.registrarVacaciones, borrarPeriodo: D.borrarPeriodo,
-                            registros: D.registros, diasHabiles: D.diasHabiles, horasDiarias: D.horasDiarias,
-                            setDiasHabiles: D.setDiasHabiles, setHorasDiarias: D.setHorasDiarias,
+                            agregarRegistro: D.agregarRegistro,
+                            guardarConfig: D.guardarConfig,
+                            exportarJSON: D.exportarJSON,
+                            mostrarImportar: mostrarImportar,
+                            importarDatos: D.importarDatos,
+                            borrarTodoHistorial: D.borrarTodoHistorial,
+                            guardarEdicion: D.guardarEdicion,
+                            eliminarRegistroActual: D.eliminarRegistroActual,
+                            undoAction: D.undoAction,
+                            redoAction: D.redoAction,
+                            aplicarFiltros: D.aplicarFiltros,
+                            limpiarFiltros: D.limpiarFiltros,
+                            registrarVacaciones: D.registrarVacaciones,
+                            borrarPeriodo: D.borrarPeriodo,
+                            registrarDiaEspecial: D.registrarDiaEspecial,
+                            registros: D.registros,
+                            diasHabiles: D.diasHabiles,
+                            horasDiarias: D.horasDiarias,
+                            setDiasHabiles: D.setDiasHabiles,
+                            setHorasDiarias: D.setHorasDiarias,
                         };
                         window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
                         window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
@@ -5968,12 +6061,12 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.49
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.51
     // ====================================================================
-    1) agregado banner de novedades al actualizar
-    2) se quita el lazy loading (boton +) de la lista de registros, se delegan las
-    funciones al colapso de meses, con solo 1 mes colapsable por defecto
-    3) correcion z-index en header (solapamiento con primer registro)
+    1) el boton de registrar por lotes agrega el tipo de registro para el dia actual
+    si no hay datos rellenos en los campos de fechas
+    2) agregado las modificaciones en la ayuda
 
-    
+
+
     -->
