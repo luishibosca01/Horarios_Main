@@ -490,43 +490,6 @@
             border-left: 5px solid var(--text-main);
         }
 
-        /* Colapsable de edición dentro del registro */
-        .registro-edit-collapse {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
-            opacity: 0;
-            margin-top: 0;
-        }
-
-        .registro-edit-collapse.expanded {
-            max-height: 600px;
-            opacity: 1;
-            margin-top: 1rem;
-        }
-
-        .registro-edit-content {
-            padding: 1rem;
-            background: var(--bg-body);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .registro-item.editing {
-            background: var(--bg-card);
-            border: 2px solid var(--input-focus);
-        }
-
-        .registro-edit-actions {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 1rem;
-        }
-
-        .registro-edit-actions button {
-            flex: 1;
-        }
-
         .registro-info {
             flex: 1;
         }
@@ -1576,6 +1539,73 @@
             </div>
         </div>
     </div>
+
+    <div class="modal" id="modal-editar">
+        <div class="modal-content">
+            <h3>
+                <span class="modal-title-block">
+                    <svg class="icon">
+                        <use href="#icon-edit" />
+                    </svg>Editar Registro
+                </span>
+            </h3>
+            <div class="form-group">
+                <label>Fecha</label>
+                <div class="input-with-btn">
+                    <input type="date" id="edit-fecha" />
+                    <button class="time-btn" id="btn-lock-toggle" onclick="UILogic.toggleBloqueoEdicion()"
+                        title="Desbloquear edición">
+                        <svg class="icon">
+                            <use href="#icon-lock" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Entrada</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
+                            <use href="#icon-clock" />
+                        </svg></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Salida</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
+                            <use href="#icon-clock" />
+                        </svg></button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Tiempo Fuera (opcional)</label>
+                <div class="input-with-btn">
+                    <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
+                        maxlength="5" />
+                    <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')">
+                        <svg class="icon">
+                            <use href="#icon-broom" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="btn-group">
+                <button class="btn-edit" onclick="DataManagement.guardarEdicion()"><svg class="icon">
+                        <use href="#icon-save" />
+                    </svg> Guardar</button>
+                <button class="btn-delete" onclick="DataManagement.eliminarRegistroActual()"><svg class="icon">
+                        <use href="#icon-trash" />
+                    </svg> Eliminar</button>
+            </div>
+            <div class="btn-group">
+                <button class="btn-cancel" onclick="UILogic.cerrarEdicion()"><svg class="icon">
+                        <use href="#icon-cancelar" />
+                    </svg> Cancelar</button>
+            </div>
+        </div>
+    </div>
     <div class="modal" id="modal-importar">
         <div class="modal-content">
             <h3><svg class="icon">
@@ -2529,115 +2559,7 @@
                     }
                 }
 
-                async function registrarVacaciones() {
-                    const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
-                    const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
-                    const tipo = $('vacaciones-tipo').value;
 
-                    // --- NUEVO: Si ambos campos están vacíos, usar fecha actual ---
-                    if (!desde && !hasta) {
-                        const fechaHoy = UILogic.obtenerFechaHoy();
-                        return registrarDiaEspecial(fechaHoy, tipo);
-                    }
-
-                    // --- Validaciones para rangos ---
-                    if (!S.validarFechaSegura(desde) || !S.validarFechaSegura(hasta)) {
-                        UILogic.mostrarToast('Fechas inválidas', 'error');
-                        return;
-                    }
-
-                    if (desde > hasta) {
-                        UILogic.mostrarToast('La fecha "Desde" debe ser anterior a "Hasta"', 'error');
-                        return;
-                    }
-
-                    // Determinar valores según tipo
-                    let entrada, salida;
-                    switch (tipo) {
-                        case 'vacaciones':
-                            entrada = '22:22';
-                            salida = '22:22';
-                            break;
-                        case 'ausencia':
-                            entrada = '11:11';
-                            salida = '11:11';
-                            break;
-                        case 'feriado':
-                            entrada = '00:00';
-                            salida = '00:00';
-                            break;
-                        default:
-                            entrada = '11:11';
-                            salida = '11:11';
-                    }
-
-                    let fechaActual = new Date(desde.replace(/-/g, '/') + ' 00:00:00');
-                    const fechaFin = new Date(hasta.replace(/-/g, '/') + ' 00:00:00');
-                    const unDia = 1000 * 60 * 60 * 24;
-                    const diferenciaTiempo = Math.abs(fechaFin - fechaActual);
-                    const totalDias = Math.ceil(diferenciaTiempo / unDia) + 1;
-                    const MAX_DIAS_LOTE = 60;
-
-                    if (totalDias > MAX_DIAS_LOTE) {
-                        UILogic.mostrarToast(`Por seguridad, el máximo es ${MAX_DIAS_LOTE} días por operación.`, 'error');
-                        return;
-                    }
-                    const fechasARegistrar = [];
-
-                    while (fechaActual <= fechaFin) {
-                        const y = fechaActual.getFullYear();
-                        const m = String(fechaActual.getMonth() + 1).padStart(2, '0');
-                        const d = String(fechaActual.getDate()).padStart(2, '0');
-                        fechasARegistrar.push(`${y}-${m}-${d}`);
-                        fechaActual.setDate(fechaActual.getDate() + 1);
-                    }
-
-                    // Verificar límites
-                    const nuevosRegistros = fechasARegistrar.filter(f => !registros.some(r => r.fecha === f));
-
-                    if (registros.length + nuevosRegistros.length > S.SECURITY_LIMITS.MAX_REGISTROS) {
-                        UILogic.mostrarToast(`Límite alcanzado. Solo se pueden agregar ${S.SECURITY_LIMITS.MAX_REGISTROS - registros.length} registros más`, 'error');
-                        return;
-                    }
-
-                    if (nuevosRegistros.length === 0) {
-                        UILogic.mostrarToast('Todas las fechas ya están registradas', 'warning');
-                        return;
-                    }
-
-                    // Crear registros
-                    nuevosRegistros.forEach(fecha => {
-                        const t = calcularHoras(entrada, salida, null);
-                        registros.push({
-                            id: S.generarIDSeguro(),
-                            fecha: fecha,
-                            entrada: entrada,
-                            salida: salida,
-                            tiempoFuera: null,
-                            horas: t?.horas || 0,
-                            minutos: t?.minutos || 0,
-                            total: t?.total || 0
-                        });
-                    });
-
-                    registros.sort((a, b) => {
-                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
-                        return (b.entrada || '').localeCompare(a.entrada || '');
-                    });
-
-                    const saved = await guardarYActualizar();
-
-                    if (saved) {
-                        HistoryManager.saveState(registros);
-                    }
-                    if (saved) {
-                        const tipoTexto = tipo === 'vacaciones' ? 'Vacaciones' : tipo === 'ausencia' ? 'Ausencias' : 'Feriados';
-                        UILogic.mostrarToast(`${nuevosRegistros.length} días registrados como ${tipoTexto}`, 'success');
-                        UILogic.cerrarVacaciones();
-                        $('vacaciones-fecha-desde').value = '';
-                        $('vacaciones-fecha-hasta').value = '';
-                    }
-                }
 
                 // --- NUEVA FUNCIÓN AUXILIAR ---
                 async function registrarDiaEspecial(fecha, tipo) {
@@ -2703,97 +2625,6 @@
 
                     if (saved) {
                         UILogic.mostrarToast(`Hoy registrado como ${tipoTexto}`, 'success');
-                        UILogic.cerrarVacaciones();
-                    }
-                }
-
-                async function borrarPeriodo() {
-                    const desde = S.sanitizeString($('vacaciones-fecha-desde').value, 10);
-                    const hasta = S.sanitizeString($('vacaciones-fecha-hasta').value, 10);
-                    const tipo = $('vacaciones-tipo').value;
-
-                    if (!S.validarFechaSegura(desde) || !S.validarFechaSegura(hasta)) {
-                        UILogic.mostrarToast('Fechas inválidas', 'error');
-                        return;
-                    }
-
-                    if (desde > hasta) {
-                        UILogic.mostrarToast('La fecha "Desde" debe ser anterior a "Hasta"', 'error');
-                        return;
-                    }
-
-                    let entrada, salida, tipoTexto;
-
-                    // casos
-                    switch (tipo) {
-                        case 'vacaciones':
-                            entrada = '22:22';
-                            salida = '22:22';
-                            tipoTexto = 'Vacaciones';
-                            break;
-                        case 'ausencia':
-                            entrada = '11:11';
-                            salida = '11:11';
-                            tipoTexto = 'Ausencias';
-                            break;
-                        case 'feriado':
-                            entrada = '00:00';
-                            salida = '00:00';
-                            tipoTexto = 'Feriados';
-                            break;
-                        case 'normal':
-                            // Para normales, borramos cualquier registro que NO sea especial
-                            entrada = null;
-                            salida = null;
-                            tipoTexto = 'Normales';
-                            break;
-                        default:
-                            UILogic.mostrarToast('Tipo inválido', 'error');
-                            return;
-                    }
-
-                    // LÓGICA DIFERENTE PARA NORMALES
-                    let registrosAEliminar;
-
-                    if (tipo === 'normal') {
-                        // Para normales: eliminar registros que NO sean feriados, ausencias o vacaciones
-                        registrosAEliminar = registros.filter(r => {
-                            const dentroDelRango = r.fecha >= desde && r.fecha <= hasta;
-                            const esFeriado = r.entrada === '00:00' && r.salida === '00:00';
-                            const esAusencia = r.entrada === '11:11' && r.salida === '11:11';
-                            const esVacaciones = r.entrada === '22:22' && r.salida === '22:22';
-
-                            // Solo eliminar si está en el rango Y NO es un tipo especial
-                            return dentroDelRango && !esFeriado && !esAusencia && !esVacaciones;
-                        });
-                    } else {
-                        // Para tipos especiales: lógica original
-                        registrosAEliminar = registros.filter(r => {
-                            return r.fecha >= desde &&
-                                r.fecha <= hasta &&
-                                r.entrada === entrada &&
-                                r.salida === salida;
-                        });
-                    }
-
-                    if (registrosAEliminar.length === 0) {
-                        UILogic.mostrarToast(`No hay registros de ${tipoTexto} en ese período`, 'info');
-                        return;
-                    }
-
-                    registros = registros.filter(r => !registrosAEliminar.includes(r));
-
-                    const saved = await guardarYActualizar();
-
-                    if (saved) {
-                        HistoryManager.saveState(registros);
-                    }
-
-                    if (saved) {
-                        UILogic.mostrarToast(`${registrosAEliminar.length} registro(s) de ${tipoTexto} eliminados`, 'success');
-                        UILogic.cerrarVacaciones();
-                        $('vacaciones-fecha-desde').value = '';
-                        $('vacaciones-fecha-hasta').value = '';
                     }
                 }
 
@@ -3831,104 +3662,14 @@
                 async function eliminarRegistro(id) {
                     registros = registros.filter(r => r.id !== id);
                     HistoryManager.saveState(registros);
-                    return await guardarYActualizar();
+
+                    const result = await guardarYActualizar(); // Guardamos el resultado
+
                     if (window.UILogic && window.UILogic.actualizarBotonLote) {
                         window.UILogic.actualizarBotonLote();
                     }
 
-                    return result;
-
-                }
-
-                async function guardarEdicionRegistro(id) {
-                    const r = registros.find(x => x.id === id);
-                    if (!r) return;
-
-                    const f = S.sanitizeString(document.getElementById(`edit-fecha-${id}`).value, 10);
-                    const e = S.sanitizeString(document.getElementById(`edit-entrada-${id}`).value.trim(), 5);
-                    const s = S.sanitizeString(document.getElementById(`edit-salida-${id}`).value.trim(), 5);
-                    let tf = S.sanitizeString(document.getElementById(`edit-tiempo-fuera-${id}`).value.trim(), 5);
-                    if (tf === '') tf = null;
-
-                    // Detectar cambios
-                    if (r.fecha === f &&
-                        (r.entrada || '') === (e || '') &&
-                        (r.salida || '') === (s || '') &&
-                        (r.tiempoFuera || '') === (tf || '')) {
-                        UILogic.mostrarToast('Sin cambios', 'info');
-                        return;
-                    }
-
-                    if (!S.validarFechaSegura(f) || (e && !S.validarHoraSegura(e)) ||
-                        (s && !S.validarHoraSegura(s)) || (tf && !S.validarHoraSegura(tf))) {
-                        UILogic.mostrarToast('Verifica los campos', 'error');
-                        return;
-                    }
-
-                    if (!e && s) {
-                        UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
-                        return;
-                    }
-
-                    if (!e && !s) {
-                        // Eliminar registro si ambos están vacíos
-                        registros = registros.filter(reg => reg.id !== id);
-                        HistoryManager.saveState(registros);
-                        const saved = await guardarYActualizar();
-                        if (saved) {
-                            UILogic.mostrarToast('Registro eliminado (vacío)', 'info');
-                        }
-                        return;
-                    }
-
-                    const existeFecha = registros.some(reg => reg.fecha === f && reg.id !== id);
-                    if (existeFecha) {
-                        UILogic.mostrarToast('Ya existe otro registro', 'error');
-                        return;
-                    }
-
-                    r.fecha = f;
-                    r.entrada = e || null;
-                    r.salida = s || null;
-                    r.tiempoFuera = tf;
-                    const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera);
-                    r.horas = t?.horas || 0;
-                    r.minutos = t?.minutos || 0;
-                    r.total = t?.total || 0;
-
-                    registros.sort((a, b) => {
-                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
-                        return (b.entrada || '').localeCompare(a.entrada || '');
-                    });
-
-                    HistoryManager.saveState(registros);
-                    const saved = await guardarYActualizar();
-
-                    if (saved) {
-                        UILogic.mostrarToast('Registro actualizado', 'success');
-                        // Cerrar el colapsable
-                        const collapse = document.getElementById(`edit-collapse-${id}`);
-                        if (collapse) collapse.classList.remove('expanded');
-                    }
-                }
-
-                async function eliminarRegistroPorId(id) {
-
-                    const registroABorrar = registros.find(r => r.id === id);
-                    if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
-                        const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
-                        const storageKey = `breakStartTime_${perfilId}`;
-                        localStorage.removeItem(storageKey);
-                        UILogic.actualizarEstadoBotonTimerMain();
-                    }
-
-                    registros = registros.filter(r => r.id !== id);
-                    HistoryManager.saveState(registros);
-                    const saved = await guardarYActualizar();
-
-                    if (saved) {
-                        UILogic.mostrarToast('Registro eliminado', 'success');
-                    }
+                    return result; // Retornamos al final
                 }
 
                 return {
@@ -3961,13 +3702,9 @@
                     aplicarFiltros,
                     limpiarFiltros,
                     obtenerRegistrosFiltrados,
-                    registrarVacaciones,
-                    borrarPeriodo,
                     registrarVacacionesDirecto,
                     borrarPeriodoDirecto,
                     eliminarRegistro,
-                    guardarEdicionRegistro,
-                    eliminarRegistroPorId,
                     registrarDiaEspecial,
                     undoAction: function () {
                         const prevState = HistoryManager.undo();
@@ -4255,21 +3992,22 @@
                     return resultado;
                 }
 
-                function crearItemRegistroIndividual(r, horasDiarias, idResaltar = null) {
-                    const container = document.createElement('div');
-                    container.className = 'registro-item-container';
-
+                function crearItemRegistroIndividual(r, horasDiarias, idResaltar = null) { // <--- NUEVO
                     const item = document.createElement('div');
                     const hoy = obtenerFechaHoy();
 
+
+
                     let className = r.fecha === hoy ? 'registro-item hoy' : 'registro-item';
 
+                    // Si el ID de este registro coincide con el que queremos resaltar...
                     if (idResaltar && r.id === idResaltar) {
                         className += ' nuevo-registro-animacion';
                     }
 
-                    item.className = className;
-                    item.onclick = () => toggleEditarRegistro(r.id);
+                    item.className = className; // Asignamos las clases
+
+                    item.onclick = () => D.editarRegistro(r.id);
 
                     const info = document.createElement('div');
                     info.className = 'registro-info';
@@ -4320,8 +4058,9 @@
                     } else if (r.entrada && r.salida) {
                         totalText = `${r.horas}h ${r.minutos}m`;
 
+                        // Sin objetivo: solo mostrar tiempo sin colores
                         if (horasDiarias === 0) {
-                            // No aplicar color
+                            // No aplicar color, dejar el texto por defecto
                         } else {
                             const diffText = formatoDiferencia(r.total);
                             if (r.total >= horasDiarias) {
@@ -4350,137 +4089,7 @@
                     info.appendChild(totalEl);
                     item.appendChild(info);
 
-                    // --- COLAPSABLE DE EDICIÓN ---
-                    const editCollapse = document.createElement('div');
-                    editCollapse.className = 'registro-edit-collapse';
-                    editCollapse.id = `edit-collapse-${r.id}`;
-
-                    const editContent = document.createElement('div');
-                    editContent.className = 'registro-edit-content';
-                    editContent.onclick = (e) => e.stopPropagation();
-
-                    editContent.innerHTML = `
-        <div class="form-group">
-            <label>Fecha</label>
-            <div class="input-with-btn">
-                <input type="date" id="edit-fecha-${r.id}" value="${r.fecha}" />
-                <button class="time-btn btn-lock-registro" id="btn-lock-toggle-${r.id}" 
-                        title="Desbloquear edición">
-                    <svg class="icon">
-                        <use href="#icon-lock" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Entrada</label>
-            <div class="input-with-btn">
-                <input type="text" id="edit-entrada-${r.id}" inputmode="numeric" 
-                       placeholder="hh:mm" maxlength="5" value="${r.entrada || ''}" />
-                <button class="time-btn btn-hora-registro" id="btn-hora-entrada-${r.id}">
-                    <svg class="icon"><use href="#icon-clock" /></svg>
-                </button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Salida</label>
-            <div class="input-with-btn">
-                <input type="text" id="edit-salida-${r.id}" inputmode="numeric" 
-                       placeholder="hh:mm" maxlength="5" value="${r.salida || ''}" />
-                <button class="time-btn btn-hora-registro" id="btn-hora-salida-${r.id}">
-                    <svg class="icon"><use href="#icon-clock" /></svg>
-                </button>
-            </div>
-        </div>
-        <div class="form-group">
-            <label>Tiempo Fuera (opcional)</label>
-            <div class="input-with-btn">
-                <input type="text" id="edit-tiempo-fuera-${r.id}" inputmode="numeric" 
-                       placeholder="Ej: 00:20" maxlength="5" value="${r.tiempoFuera || ''}" />
-                <button class="time-btn btn-limpiar-registro" id="btn-limpiar-${r.id}">
-                    <svg class="icon"><use href="#icon-broom" /></svg>
-                </button>
-            </div>
-        </div>
-        <div class="registro-edit-actions">
-            <button class="btn-edit btn-accion-registro" id="btn-guardar-${r.id}">
-                <svg class="icon"><use href="#icon-save" /></svg> Guardar
-            </button>
-            <button class="btn-delete btn-accion-registro" id="btn-eliminar-${r.id}">
-                <svg class="icon"><use href="#icon-trash" /></svg> Eliminar
-            </button>
-        </div>
-    `;
-
-                    editCollapse.appendChild(editContent);
-                    container.appendChild(item);
-                    container.appendChild(editCollapse);
-
-                    // EVENTO: Formato de hora
-                    setTimeout(() => {
-                        ['edit-entrada-', 'edit-salida-', 'edit-tiempo-fuera-'].forEach(prefix => {
-                            const input = document.getElementById(prefix + r.id);
-                            if (input) input.addEventListener('input', formatearInput);
-                        });
-
-                        // EVENTO: Botón de bloqueo/desbloqueo
-                        const btnLock = document.getElementById(`btn-lock-toggle-${r.id}`);
-                        if (btnLock) {
-                            btnLock.onclick = (e) => {
-                                e.stopPropagation();
-                                toggleBloqueoEdicionRegistro(r.id);
-                            };
-                        }
-
-                        // EVENTO: Botones de pegar hora
-                        const btnHoraEntrada = document.getElementById(`btn-hora-entrada-${r.id}`);
-                        if (btnHoraEntrada) {
-                            btnHoraEntrada.onclick = (e) => {
-                                e.stopPropagation();
-                                pegarHoraActual(`edit-entrada-${r.id}`);
-                            };
-                        }
-
-                        const btnHoraSalida = document.getElementById(`btn-hora-salida-${r.id}`);
-                        if (btnHoraSalida) {
-                            btnHoraSalida.onclick = (e) => {
-                                e.stopPropagation();
-                                pegarHoraActual(`edit-salida-${r.id}`);
-                            };
-                        }
-
-                        // EVENTO: Botón limpiar
-                        const btnLimpiar = document.getElementById(`btn-limpiar-${r.id}`);
-                        if (btnLimpiar) {
-                            btnLimpiar.onclick = (e) => {
-                                e.stopPropagation();
-                                limpiarCampo(`edit-tiempo-fuera-${r.id}`);
-                            };
-                        }
-
-                        // EVENTO: Botón guardar
-                        const btnGuardar = document.getElementById(`btn-guardar-${r.id}`);
-                        if (btnGuardar) {
-                            btnGuardar.onclick = async (e) => {
-                                e.stopPropagation();
-                                await D.guardarEdicionRegistro(r.id);
-                            };
-                        }
-
-                        // EVENTO: Botón eliminar
-                        const btnEliminar = document.getElementById(`btn-eliminar-${r.id}`);
-                        if (btnEliminar) {
-                            btnEliminar.onclick = async (e) => {
-                                e.stopPropagation();
-                                await D.eliminarRegistroPorId(r.id);
-                            };
-                        }
-
-                        // Bloquear inicialmente
-                        setBloqueoEdicionRegistro(r.id, true);
-                    }, 0);
-
-                    return container;
+                    return item;
                 }
 
                 function setProgressBarColor(progressEl, status) {
@@ -5208,12 +4817,6 @@
                     actualizarFeedbackConfig();
                 }
 
-                // Funciones legacy para compatibilidad
-                function incrementarHorasDiarias() { cambiarHorasDiarias(0.5); }
-                function decrementarHorasDiarias() { cambiarHorasDiarias(-0.5); }
-                function incrementarDiasHabiles() { cambiarDiasHabiles(1); }
-                function decrementarDiasHabiles() { cambiarDiasHabiles(-1); }
-
                 function mostrarConfig() {
                     $('config-dias-habiles').value = D.diasHabiles();
                     $('config-horas-diarias').value = D.horasDiarias();
@@ -5223,26 +4826,6 @@
 
                 function cerrarConfig() {
                     $('modal-config').classList.remove('show');
-                }
-
-                function mostrarPerfiles() {
-                    const perfilActual = window.PerfilManager.obtenerDatosPerfil();
-                    const perfilId = window.PerfilManager.obtenerPerfilActual();
-
-                    $('nombre-perfil-actual').value = perfilActual.nombre;
-                    $('perfil-actual-id').textContent = perfilId;
-
-                    const btnEliminar = $('btn-eliminar-perfil-modal');
-                    if (btnEliminar) {
-                        btnEliminar.disabled = (perfilId === 'default');
-                        btnEliminar.style.opacity = (perfilId === 'default') ? '0.5' : '1';
-                    }
-
-                    $('modal-perfiles').classList.add('show');
-                }
-
-                function cerrarPerfiles() {
-                    $('modal-perfiles').classList.remove('show');
                 }
 
                 function cerrarEdicion() {
@@ -5743,33 +5326,6 @@ Generado por Sistema de Horarios
 
                 function toggleBloqueoEdicion() {
                     setBloqueoEdicion(!edicionBloqueada);
-                }
-
-                function mostrarVacaciones() {
-                    $('vacaciones-fecha-desde').value = '';
-                    $('vacaciones-fecha-hasta').value = '';
-                    $('vacaciones-tipo').value = 'feriado';
-                    $('modal-vacaciones').classList.add('show');
-                    actualizarBotonesVacaciones();
-                }
-
-                function cerrarVacaciones() {
-                    $('modal-vacaciones').classList.remove('show');
-                }
-
-                function actualizarBotonesVacaciones() {
-                    const tipo = $('vacaciones-tipo').value;
-                    const btnRegistrar = document.querySelector('#modal-vacaciones .btn-backup');
-
-                    if (tipo === 'normal') {
-                        btnRegistrar.disabled = true;
-                        btnRegistrar.style.opacity = '0.5';
-                        btnRegistrar.title = 'No se pueden registrar rangos de tipo Normal';
-                    } else {
-                        btnRegistrar.disabled = false;
-                        btnRegistrar.style.opacity = '1';
-                        btnRegistrar.title = '';
-                    }
                 }
 
                 function renderizarListaPerfiles() {
@@ -6293,85 +5849,6 @@ Generado por Sistema de Horarios
                     return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
                 }
 
-                function toggleEditarRegistro(id) {
-                    // Cerrar otros colapsables abiertos
-                    document.querySelectorAll('.registro-edit-collapse.expanded').forEach(collapse => {
-                        if (collapse.id !== `edit-collapse-${id}`) {
-                            collapse.classList.remove('expanded');
-                            const item = collapse.previousElementSibling;
-                            if (item) item.classList.remove('editing');
-                        }
-                    });
-
-                    const collapse = document.getElementById(`edit-collapse-${id}`);
-                    const item = collapse?.previousElementSibling;
-
-                    if (collapse && item) {
-                        const isExpanding = !collapse.classList.contains('expanded');
-
-                        collapse.classList.toggle('expanded');
-                        item.classList.toggle('editing');
-
-                        if (isExpanding) {
-                            // Scroll suave al registro
-                            setTimeout(() => {
-                                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                            }, 100);
-                        }
-                    }
-                }
-
-                function setBloqueoEdicionRegistro(id, bloqueado) {
-                    const inputs = [
-                        `edit-fecha-${id}`,
-                        `edit-entrada-${id}`,
-                        `edit-salida-${id}`,
-                        `edit-tiempo-fuera-${id}`
-                    ];
-
-                    inputs.forEach(inputId => {
-                        const el = document.getElementById(inputId);
-                        if (el) el.disabled = bloqueado;
-                    });
-
-                    const btnLock = document.getElementById(`btn-lock-toggle-${id}`);
-                    if (btnLock) {
-                        const icon = btnLock.querySelector('use');
-                        icon.setAttribute('href', bloqueado ? '#icon-lock' : '#icon-lock-open');
-                        btnLock.title = bloqueado ? "Desbloquear edición" : "Bloquear edición";
-                        btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
-                    }
-
-                    // Bloquear/desbloquear TODOS los botones auxiliares
-                    const botonesAuxiliares = [
-                        `btn-hora-entrada-${id}`,
-                        `btn-hora-salida-${id}`,
-                        `btn-limpiar-${id}`
-                    ];
-
-                    botonesAuxiliares.forEach(btnId => {
-                        const btn = document.getElementById(btnId);
-                        if (btn) {
-                            btn.disabled = bloqueado;
-                            btn.style.opacity = bloqueado ? '0.5' : '1';
-                            btn.style.cursor = bloqueado ? 'not-allowed' : 'pointer';
-                        }
-                    });
-
-                    // Bloquear/desbloquear botones de acción
-                    const botonesAccion = document.querySelectorAll(`#edit-collapse-${id} .btn-accion-registro`);
-                    botonesAccion.forEach(btn => {
-                        btn.disabled = bloqueado;
-                        btn.style.opacity = bloqueado ? '0.5' : '1';
-                    });
-                }
-
-                function toggleBloqueoEdicionRegistro(id) {
-                    const primerInput = document.getElementById(`edit-fecha-${id}`);
-                    const estaBloqueado = primerInput?.disabled || false;
-                    setBloqueoEdicionRegistro(id, !estaBloqueado);
-                }
-
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -6393,15 +5870,12 @@ Generado por Sistema de Horarios
                         redoAction: D.redoAction,
                         aplicarFiltros: D.aplicarFiltros,
                         limpiarFiltros: D.limpiarFiltros,
-                        registrarVacaciones: D.registrarVacaciones,
-                        borrarPeriodo: D.borrarPeriodo,
                         registrarDiaEspecial: D.registrarDiaEspecial,
                         registros: D.registros,
                         diasHabiles: D.diasHabiles,
                         horasDiarias: D.horasDiarias,
                         setDiasHabiles: D.setDiasHabiles,
                         setHorasDiarias: D.setHorasDiarias,
-                        
                     };
                     window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
                     window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
@@ -6411,17 +5885,14 @@ Generado por Sistema de Horarios
                         alternarTema, mostrarConfig, cerrarConfig, pegarHoraActual, alternarVista,
                         cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast,
                         mostrarError, limpiarError, resetearBoton, restaurarBotonGuardarEdicion,
-                        incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo,
-                        incrementarDiasHabiles, decrementarDiasHabiles, obtenerFechaHoy, mostrarFiltros,
-                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte, mostrarVacaciones,
-                        cerrarVacaciones, toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
-                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarBotonesVacaciones,
-                        actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles,
-                        abrirSelectorPerfiles, cerrarSelectorPerfiles,
+                        limpiarCampo, obtenerFechaHoy, mostrarFiltros, poblarSelectorMeses, actualizarBotonLote,
+                        cerrarFiltros, mostrarAyuda, cerrarAyuda, cambiarMesStats, generarReporte,
+                        toggleFormulario, toggleBotonesHistorico, toggleStats, toggleTimerBreakMain,
+                        actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion, actualizarFeedbackConfig,
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio,
-                        abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard, actualizarBotonLote,
-                        obtenerNombreTipo, calcularDiferenciaDias, toggleEditarRegistro, setBloqueoEdicionRegistro, toggleBloqueoEdicionRegistro,
+                        abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard,
+                        obtenerNombreTipo, calcularDiferenciaDias, abrirSelectorPerfiles, cerrarSelectorPerfiles,
                     };
 
                     // =========================================================
@@ -6514,13 +5985,12 @@ Generado por Sistema de Horarios
                     const agregarListenersFecha = (el) => {
                         if (!el) return;
                         el.addEventListener('change', () => actualizarBotonLote());
-                        el.addEventListener('input', () => actualizarBotonLote()); // <--- ESTO ES CLAVE
+                        el.addEventListener('input', () => actualizarBotonLote());
                     };
 
+                    // Aplicamos la función a AMBOS campos (Desde y Hasta)
                     agregarListenersFecha(loteDesde);
                     agregarListenersFecha(loteHasta);
-                    if (loteDesde) loteDesde.addEventListener('change', () => actualizarBotonLote());
-                    if (loteHasta) loteHasta.addEventListener('change', () => actualizarBotonLote());
                 }
 
                 function mostrarFiltros() {
@@ -6596,17 +6066,15 @@ Generado por Sistema de Horarios
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
-                    limpiarError, resetearBoton, restaurarBotonGuardarEdicion, mostrarVacaciones, toggleFormulario,
-                    cerrarVacaciones, incrementarHorasDiarias, decrementarHorasDiarias, limpiarCampo, actualizarBotonesVacaciones,
-                    incrementarDiasHabiles, decrementarDiasHabiles, mostrarFiltros, cerrarFiltros, mostrarAyuda,
+                    limpiarError, resetearBoton, restaurarBotonGuardarEdicion, toggleFormulario,
+                    limpiarCampo, mostrarFiltros, cerrarFiltros, mostrarAyuda, registrarLoteDesdeCard,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
-                    actualizarFeedbackConfig, poblarSelectorMeses, mostrarPerfiles, cerrarPerfiles, abrirSelectorPerfiles,
+                    actualizarFeedbackConfig, poblarSelectorMeses, abrirSelectorPerfiles, calcularDiferenciaDias,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
-                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles, registrarLoteDesdeCard,
-                    actualizarBotonLote, obtenerNombreTipo, calcularDiferenciaDias, toggleEditarRegistro, setBloqueoEdicionRegistro,
-                    toggleBloqueoEdicionRegistro,
+                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles,
+                    actualizarBotonLote, obtenerNombreTipo, 
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6641,9 +6109,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.53
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.54
     // ====================================================================
-    1) Se agrega descriocion de ayuda acerca de DATOS
+    1) eliminacion de codigo en desuso
 
 
     
