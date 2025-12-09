@@ -490,6 +490,43 @@
             border-left: 5px solid var(--text-main);
         }
 
+        /* Colapsable de edición dentro del registro */
+        .registro-edit-collapse {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            opacity: 0;
+            margin-top: 0;
+        }
+
+        .registro-edit-collapse.expanded {
+            max-height: 600px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+
+        .registro-edit-content {
+            padding: 1rem;
+            background: var(--bg-body);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .registro-item.editing {
+            background: var(--bg-card);
+            border: 2px solid var(--input-focus);
+        }
+
+        .registro-edit-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .registro-edit-actions button {
+            flex: 1;
+        }
+
         .registro-info {
             flex: 1;
         }
@@ -1051,9 +1088,9 @@
             opacity: 0;
             transform: translateY(-10px);
         }
-        
     </style>
 </head>
+
 <body>
     <script>
         (function () { //Evitar parpadeo al actualizar, (modo oscuro)
@@ -1539,73 +1576,6 @@
             </div>
         </div>
     </div>
-
-    <div class="modal" id="modal-editar">
-        <div class="modal-content">
-            <h3>
-                <span class="modal-title-block">
-                    <svg class="icon">
-                        <use href="#icon-edit" />
-                    </svg>Editar Registro
-                </span>
-            </h3>
-            <div class="form-group">
-                <label>Fecha</label>
-                <div class="input-with-btn">
-                    <input type="date" id="edit-fecha" />
-                    <button class="time-btn" id="btn-lock-toggle" onclick="UILogic.toggleBloqueoEdicion()"
-                        title="Desbloquear edición">
-                        <svg class="icon">
-                            <use href="#icon-lock" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Entrada</label>
-                <div class="input-with-btn">
-                    <input type="text" id="edit-entrada" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
-                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-entrada')"><svg class="icon">
-                            <use href="#icon-clock" />
-                        </svg></button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Salida</label>
-                <div class="input-with-btn">
-                    <input type="text" id="edit-salida" inputmode="numeric" placeholder="hh:mm" maxlength="5" />
-                    <button class="time-btn" onclick="UILogic.pegarHoraActual('edit-salida')"><svg class="icon">
-                            <use href="#icon-clock" />
-                        </svg></button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Tiempo Fuera (opcional)</label>
-                <div class="input-with-btn">
-                    <input type="text" id="edit-tiempo-fuera" inputmode="numeric" placeholder="Ej: 00:20"
-                        maxlength="5" />
-                    <button class="time-btn" onclick="UILogic.limpiarCampo('edit-tiempo-fuera')">
-                        <svg class="icon">
-                            <use href="#icon-broom" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
-            <div class="btn-group">
-                <button class="btn-edit" onclick="DataManagement.guardarEdicion()"><svg class="icon">
-                        <use href="#icon-save" />
-                    </svg> Guardar</button>
-                <button class="btn-delete" onclick="DataManagement.eliminarRegistroActual()"><svg class="icon">
-                        <use href="#icon-trash" />
-                    </svg> Eliminar</button>
-            </div>
-            <div class="btn-group">
-                <button class="btn-cancel" onclick="UILogic.cerrarEdicion()"><svg class="icon">
-                        <use href="#icon-cancelar" />
-                    </svg> Cancelar</button>
-            </div>
-        </div>
-    </div>
     <div class="modal" id="modal-importar">
         <div class="modal-content">
             <h3><svg class="icon">
@@ -1812,6 +1782,9 @@
                     <li><strong>Filtros:</strong> Usa el icono <svg class="icon">
                             <use href="#icon-filter" />
                         </svg> en el historial para buscar fechas específicas.</li>
+                    <li><strong>Datos:</strong> Se guardan de forma local en el almacenamiento del navegador
+                        (localStorage) del dispositvo en uso
+                    </li>
                 </ul>
                 <a href="#inicio-ayuda" class="volver-arriba">↑ Volver al índice</a>
 
@@ -3867,6 +3840,97 @@
 
                 }
 
+                async function guardarEdicionRegistro(id) {
+                    const r = registros.find(x => x.id === id);
+                    if (!r) return;
+
+                    const f = S.sanitizeString(document.getElementById(`edit-fecha-${id}`).value, 10);
+                    const e = S.sanitizeString(document.getElementById(`edit-entrada-${id}`).value.trim(), 5);
+                    const s = S.sanitizeString(document.getElementById(`edit-salida-${id}`).value.trim(), 5);
+                    let tf = S.sanitizeString(document.getElementById(`edit-tiempo-fuera-${id}`).value.trim(), 5);
+                    if (tf === '') tf = null;
+
+                    // Detectar cambios
+                    if (r.fecha === f &&
+                        (r.entrada || '') === (e || '') &&
+                        (r.salida || '') === (s || '') &&
+                        (r.tiempoFuera || '') === (tf || '')) {
+                        UILogic.mostrarToast('Sin cambios', 'info');
+                        return;
+                    }
+
+                    if (!S.validarFechaSegura(f) || (e && !S.validarHoraSegura(e)) ||
+                        (s && !S.validarHoraSegura(s)) || (tf && !S.validarHoraSegura(tf))) {
+                        UILogic.mostrarToast('Verifica los campos', 'error');
+                        return;
+                    }
+
+                    if (!e && s) {
+                        UILogic.mostrarToast('Debes registrar una entrada primero', 'error');
+                        return;
+                    }
+
+                    if (!e && !s) {
+                        // Eliminar registro si ambos están vacíos
+                        registros = registros.filter(reg => reg.id !== id);
+                        HistoryManager.saveState(registros);
+                        const saved = await guardarYActualizar();
+                        if (saved) {
+                            UILogic.mostrarToast('Registro eliminado (vacío)', 'info');
+                        }
+                        return;
+                    }
+
+                    const existeFecha = registros.some(reg => reg.fecha === f && reg.id !== id);
+                    if (existeFecha) {
+                        UILogic.mostrarToast('Ya existe otro registro', 'error');
+                        return;
+                    }
+
+                    r.fecha = f;
+                    r.entrada = e || null;
+                    r.salida = s || null;
+                    r.tiempoFuera = tf;
+                    const t = calcularHoras(r.entrada, r.salida, r.tiempoFuera);
+                    r.horas = t?.horas || 0;
+                    r.minutos = t?.minutos || 0;
+                    r.total = t?.total || 0;
+
+                    registros.sort((a, b) => {
+                        if (a.fecha !== b.fecha) return b.fecha.localeCompare(a.fecha);
+                        return (b.entrada || '').localeCompare(a.entrada || '');
+                    });
+
+                    HistoryManager.saveState(registros);
+                    const saved = await guardarYActualizar();
+
+                    if (saved) {
+                        UILogic.mostrarToast('Registro actualizado', 'success');
+                        // Cerrar el colapsable
+                        const collapse = document.getElementById(`edit-collapse-${id}`);
+                        if (collapse) collapse.classList.remove('expanded');
+                    }
+                }
+
+                async function eliminarRegistroPorId(id) {
+
+                    const registroABorrar = registros.find(r => r.id === id);
+                    if (registroABorrar && registroABorrar.fecha === UILogic.obtenerFechaHoy()) {
+                        const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                        const storageKey = `breakStartTime_${perfilId}`;
+                        localStorage.removeItem(storageKey);
+                        UILogic.actualizarEstadoBotonTimerMain();
+                    }
+
+                    registros = registros.filter(r => r.id !== id);
+                    HistoryManager.saveState(registros);
+                    const saved = await guardarYActualizar();
+
+                    if (saved) {
+                        UILogic.mostrarToast('Registro eliminado', 'success');
+                    }
+                }
+
                 return {
                     registros: () => registros,
                     horasSemanales: () => (horasDiarias * diasHabiles),
@@ -3902,6 +3966,8 @@
                     registrarVacacionesDirecto,
                     borrarPeriodoDirecto,
                     eliminarRegistro,
+                    guardarEdicionRegistro,
+                    eliminarRegistroPorId,
                     registrarDiaEspecial,
                     undoAction: function () {
                         const prevState = HistoryManager.undo();
@@ -4189,22 +4255,21 @@
                     return resultado;
                 }
 
-                function crearItemRegistroIndividual(r, horasDiarias, idResaltar = null) { // <--- NUEVO
+                function crearItemRegistroIndividual(r, horasDiarias, idResaltar = null) {
+                    const container = document.createElement('div');
+                    container.className = 'registro-item-container';
+
                     const item = document.createElement('div');
                     const hoy = obtenerFechaHoy();
 
-
-
                     let className = r.fecha === hoy ? 'registro-item hoy' : 'registro-item';
 
-                    // Si el ID de este registro coincide con el que queremos resaltar...
                     if (idResaltar && r.id === idResaltar) {
                         className += ' nuevo-registro-animacion';
                     }
 
-                    item.className = className; // Asignamos las clases
-
-                    item.onclick = () => D.editarRegistro(r.id);
+                    item.className = className;
+                    item.onclick = () => toggleEditarRegistro(r.id);
 
                     const info = document.createElement('div');
                     info.className = 'registro-info';
@@ -4255,9 +4320,8 @@
                     } else if (r.entrada && r.salida) {
                         totalText = `${r.horas}h ${r.minutos}m`;
 
-                        // Sin objetivo: solo mostrar tiempo sin colores
                         if (horasDiarias === 0) {
-                            // No aplicar color, dejar el texto por defecto
+                            // No aplicar color
                         } else {
                             const diffText = formatoDiferencia(r.total);
                             if (r.total >= horasDiarias) {
@@ -4286,7 +4350,137 @@
                     info.appendChild(totalEl);
                     item.appendChild(info);
 
-                    return item;
+                    // --- COLAPSABLE DE EDICIÓN ---
+                    const editCollapse = document.createElement('div');
+                    editCollapse.className = 'registro-edit-collapse';
+                    editCollapse.id = `edit-collapse-${r.id}`;
+
+                    const editContent = document.createElement('div');
+                    editContent.className = 'registro-edit-content';
+                    editContent.onclick = (e) => e.stopPropagation();
+
+                    editContent.innerHTML = `
+        <div class="form-group">
+            <label>Fecha</label>
+            <div class="input-with-btn">
+                <input type="date" id="edit-fecha-${r.id}" value="${r.fecha}" />
+                <button class="time-btn btn-lock-registro" id="btn-lock-toggle-${r.id}" 
+                        title="Desbloquear edición">
+                    <svg class="icon">
+                        <use href="#icon-lock" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Entrada</label>
+            <div class="input-with-btn">
+                <input type="text" id="edit-entrada-${r.id}" inputmode="numeric" 
+                       placeholder="hh:mm" maxlength="5" value="${r.entrada || ''}" />
+                <button class="time-btn btn-hora-registro" id="btn-hora-entrada-${r.id}">
+                    <svg class="icon"><use href="#icon-clock" /></svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Salida</label>
+            <div class="input-with-btn">
+                <input type="text" id="edit-salida-${r.id}" inputmode="numeric" 
+                       placeholder="hh:mm" maxlength="5" value="${r.salida || ''}" />
+                <button class="time-btn btn-hora-registro" id="btn-hora-salida-${r.id}">
+                    <svg class="icon"><use href="#icon-clock" /></svg>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Tiempo Fuera (opcional)</label>
+            <div class="input-with-btn">
+                <input type="text" id="edit-tiempo-fuera-${r.id}" inputmode="numeric" 
+                       placeholder="Ej: 00:20" maxlength="5" value="${r.tiempoFuera || ''}" />
+                <button class="time-btn btn-limpiar-registro" id="btn-limpiar-${r.id}">
+                    <svg class="icon"><use href="#icon-broom" /></svg>
+                </button>
+            </div>
+        </div>
+        <div class="registro-edit-actions">
+            <button class="btn-edit btn-accion-registro" id="btn-guardar-${r.id}">
+                <svg class="icon"><use href="#icon-save" /></svg> Guardar
+            </button>
+            <button class="btn-delete btn-accion-registro" id="btn-eliminar-${r.id}">
+                <svg class="icon"><use href="#icon-trash" /></svg> Eliminar
+            </button>
+        </div>
+    `;
+
+                    editCollapse.appendChild(editContent);
+                    container.appendChild(item);
+                    container.appendChild(editCollapse);
+
+                    // EVENTO: Formato de hora
+                    setTimeout(() => {
+                        ['edit-entrada-', 'edit-salida-', 'edit-tiempo-fuera-'].forEach(prefix => {
+                            const input = document.getElementById(prefix + r.id);
+                            if (input) input.addEventListener('input', formatearInput);
+                        });
+
+                        // EVENTO: Botón de bloqueo/desbloqueo
+                        const btnLock = document.getElementById(`btn-lock-toggle-${r.id}`);
+                        if (btnLock) {
+                            btnLock.onclick = (e) => {
+                                e.stopPropagation();
+                                toggleBloqueoEdicionRegistro(r.id);
+                            };
+                        }
+
+                        // EVENTO: Botones de pegar hora
+                        const btnHoraEntrada = document.getElementById(`btn-hora-entrada-${r.id}`);
+                        if (btnHoraEntrada) {
+                            btnHoraEntrada.onclick = (e) => {
+                                e.stopPropagation();
+                                pegarHoraActual(`edit-entrada-${r.id}`);
+                            };
+                        }
+
+                        const btnHoraSalida = document.getElementById(`btn-hora-salida-${r.id}`);
+                        if (btnHoraSalida) {
+                            btnHoraSalida.onclick = (e) => {
+                                e.stopPropagation();
+                                pegarHoraActual(`edit-salida-${r.id}`);
+                            };
+                        }
+
+                        // EVENTO: Botón limpiar
+                        const btnLimpiar = document.getElementById(`btn-limpiar-${r.id}`);
+                        if (btnLimpiar) {
+                            btnLimpiar.onclick = (e) => {
+                                e.stopPropagation();
+                                limpiarCampo(`edit-tiempo-fuera-${r.id}`);
+                            };
+                        }
+
+                        // EVENTO: Botón guardar
+                        const btnGuardar = document.getElementById(`btn-guardar-${r.id}`);
+                        if (btnGuardar) {
+                            btnGuardar.onclick = async (e) => {
+                                e.stopPropagation();
+                                await D.guardarEdicionRegistro(r.id);
+                            };
+                        }
+
+                        // EVENTO: Botón eliminar
+                        const btnEliminar = document.getElementById(`btn-eliminar-${r.id}`);
+                        if (btnEliminar) {
+                            btnEliminar.onclick = async (e) => {
+                                e.stopPropagation();
+                                await D.eliminarRegistroPorId(r.id);
+                            };
+                        }
+
+                        // Bloquear inicialmente
+                        setBloqueoEdicionRegistro(r.id, true);
+                    }, 0);
+
+                    return container;
                 }
 
                 function setProgressBarColor(progressEl, status) {
@@ -6099,6 +6293,85 @@ Generado por Sistema de Horarios
                     return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
                 }
 
+                function toggleEditarRegistro(id) {
+                    // Cerrar otros colapsables abiertos
+                    document.querySelectorAll('.registro-edit-collapse.expanded').forEach(collapse => {
+                        if (collapse.id !== `edit-collapse-${id}`) {
+                            collapse.classList.remove('expanded');
+                            const item = collapse.previousElementSibling;
+                            if (item) item.classList.remove('editing');
+                        }
+                    });
+
+                    const collapse = document.getElementById(`edit-collapse-${id}`);
+                    const item = collapse?.previousElementSibling;
+
+                    if (collapse && item) {
+                        const isExpanding = !collapse.classList.contains('expanded');
+
+                        collapse.classList.toggle('expanded');
+                        item.classList.toggle('editing');
+
+                        if (isExpanding) {
+                            // Scroll suave al registro
+                            setTimeout(() => {
+                                item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }, 100);
+                        }
+                    }
+                }
+
+                function setBloqueoEdicionRegistro(id, bloqueado) {
+                    const inputs = [
+                        `edit-fecha-${id}`,
+                        `edit-entrada-${id}`,
+                        `edit-salida-${id}`,
+                        `edit-tiempo-fuera-${id}`
+                    ];
+
+                    inputs.forEach(inputId => {
+                        const el = document.getElementById(inputId);
+                        if (el) el.disabled = bloqueado;
+                    });
+
+                    const btnLock = document.getElementById(`btn-lock-toggle-${id}`);
+                    if (btnLock) {
+                        const icon = btnLock.querySelector('use');
+                        icon.setAttribute('href', bloqueado ? '#icon-lock' : '#icon-lock-open');
+                        btnLock.title = bloqueado ? "Desbloquear edición" : "Bloquear edición";
+                        btnLock.style.color = bloqueado ? 'var(--c-red)' : 'var(--text-main)';
+                    }
+
+                    // Bloquear/desbloquear TODOS los botones auxiliares
+                    const botonesAuxiliares = [
+                        `btn-hora-entrada-${id}`,
+                        `btn-hora-salida-${id}`,
+                        `btn-limpiar-${id}`
+                    ];
+
+                    botonesAuxiliares.forEach(btnId => {
+                        const btn = document.getElementById(btnId);
+                        if (btn) {
+                            btn.disabled = bloqueado;
+                            btn.style.opacity = bloqueado ? '0.5' : '1';
+                            btn.style.cursor = bloqueado ? 'not-allowed' : 'pointer';
+                        }
+                    });
+
+                    // Bloquear/desbloquear botones de acción
+                    const botonesAccion = document.querySelectorAll(`#edit-collapse-${id} .btn-accion-registro`);
+                    botonesAccion.forEach(btn => {
+                        btn.disabled = bloqueado;
+                        btn.style.opacity = bloqueado ? '0.5' : '1';
+                    });
+                }
+
+                function toggleBloqueoEdicionRegistro(id) {
+                    const primerInput = document.getElementById(`edit-fecha-${id}`);
+                    const estaBloqueado = primerInput?.disabled || false;
+                    setBloqueoEdicionRegistro(id, !estaBloqueado);
+                }
+
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -6128,6 +6401,7 @@ Generado por Sistema de Horarios
                         horasDiarias: D.horasDiarias,
                         setDiasHabiles: D.setDiasHabiles,
                         setHorasDiarias: D.setHorasDiarias,
+                        
                     };
                     window.HistoryManager = { undo: D.undoAction, redo: D.redoAction };
                     window.PWAInstaller = { instalarApp: PWAInstaller.instalarApp };
@@ -6147,7 +6421,7 @@ Generado por Sistema de Horarios
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio,
                         abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard, actualizarBotonLote,
-                        obtenerNombreTipo, calcularDiferenciaDias
+                        obtenerNombreTipo, calcularDiferenciaDias, toggleEditarRegistro, setBloqueoEdicionRegistro, toggleBloqueoEdicionRegistro,
                     };
 
                     // =========================================================
@@ -6331,7 +6605,8 @@ Generado por Sistema de Horarios
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
                     iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles, registrarLoteDesdeCard,
-                    actualizarBotonLote, obtenerNombreTipo, calcularDiferenciaDias
+                    actualizarBotonLote, obtenerNombreTipo, calcularDiferenciaDias, toggleEditarRegistro, setBloqueoEdicionRegistro,
+                    toggleBloqueoEdicionRegistro,
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6368,7 +6643,7 @@ Generado por Sistema de Horarios
 <!--// ====================================================================
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.53
     // ====================================================================
-    1) 
+    1) Se agrega descriocion de ayuda acerca de DATOS
 
 
     
