@@ -1460,7 +1460,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.55</span>
+                <span class="version-text">v6.56</span>
             </h3>
 
             <div class="form-group">
@@ -5197,8 +5197,20 @@ Generado por Sistema de Horarios
 
                 function actualizarEstadoBotonTimerMain() {
                     const btn = document.getElementById('btn-timer-main');
-                    const card = document.getElementById('stats-card'); // <--- 1. REFERENCIA A LA TARJETA
+                    const card = document.getElementById('stats-card');
                     if (!btn) return;
+
+                    // Verificamos si el 'modo-lote' es el que está visible actualmente
+                    const modoLote = document.getElementById('modo-lote');
+                    if (modoLote && modoLote.style.display !== 'none') {
+                        // Si estamos en modo lote, nos aseguramos que el botón siga oculto y SALIMOS
+                        btn.style.display = 'none';
+                        return;
+                    }
+
+                    // Si no estamos en modo lote, nos aseguramos que se vea
+                    btn.style.display = '';
+                    // ---------------------------------
 
                     const hoy = obtenerFechaHoy();
                     const registroHoy = D.registros().find(r => r.fecha === hoy);
@@ -5209,7 +5221,6 @@ Generado por Sistema de Horarios
                     const isRunning = localStorage.getItem(storageKey) !== null;
                     const icon = btn.querySelector('use');
 
-                    // ... (lógica de bloqueo del botón existente) ...
                     const diaCerrado = registroHoy && registroHoy.salida && registroHoy.salida.trim() !== '';
 
                     if (!isRunning && (!registroHoy || diaCerrado)) {
@@ -5231,10 +5242,8 @@ Generado por Sistema de Horarios
                         btn.style.borderColor = 'var(--c-red)';
                         icon.setAttribute('href', '#icon-coffee');
 
-                        // <--- 2. ACTIVAR EFECTO EN TARJETA
                         if (card) {
                             card.classList.add('timer-running');
-                            // Opcional: Cambiar título temporalmente
                             const titulo = card.querySelector('h2');
                             if (titulo) titulo.innerHTML = `<svg class="icon"><use href="#icon-coffee"/></svg> Tiempo fuera...`;
                         }
@@ -5246,7 +5255,6 @@ Generado por Sistema de Horarios
                         btn.style.borderColor = 'var(--border)';
                         icon.setAttribute('href', '#icon-coffee');
 
-                        // <--- 3. DESACTIVAR EFECTO EN TARJETA
                         if (card) card.classList.remove('timer-running');
                     }
                 }
@@ -6116,9 +6124,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.55
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.56
     // ====================================================================
-    1) corregido destello en el item contenedor de dias especiales
+    1) corregido boton timepo fuera que aparece subitamente al pasar 60 segundos
 
 
     -->
