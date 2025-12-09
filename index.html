@@ -1460,7 +1460,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.53</span>
+                <span class="version-text">v6.55</span>
             </h3>
 
             <div class="form-group">
@@ -3577,10 +3577,17 @@
                         return;
                     }
 
+                    // --- CAMBIO CLAVE 1: Creamos array para guardar IDs ---
+                    const idsNuevosParaAnimar = [];
+
                     nuevosRegistros.forEach(fecha => {
                         const t = calcularHoras(entrada, salida, null);
+                        const nuevoId = S.generarIDSeguro(); // Generamos ID
+
+                        idsNuevosParaAnimar.push(nuevoId); // Lo guardamos para animar
+
                         registros.push({
-                            id: S.generarIDSeguro(),
+                            id: nuevoId,
                             fecha: fecha,
                             entrada: entrada,
                             salida: salida,
@@ -3597,12 +3604,12 @@
                     });
 
                     HistoryManager.saveState(registros);
-                    const saved = await guardarYActualizar();
+
+                    // --- CAMBIO CLAVE 2: Enviamos el array de IDs a la UI ---
+                    const saved = await guardarYActualizar(true, idsNuevosParaAnimar);
 
                     if (saved) {
                         UILogic.mostrarToast(`${nuevosRegistros.length} días registrados`, 'success');
-
-                        // Actualizar el botón después de registrar
                         if (UILogic.actualizarBotonLote) {
                             UILogic.actualizarBotonLote();
                         }
@@ -3723,8 +3730,6 @@
                             registros.splice(0, registros.length, ...nextState);
                             guardarYActualizar();
                             UILogic.mostrarToast('Rehecho', 'info');
-
-                            // AGREGADO: Actualizar visualmente el botón de lote si estamos en ese modo
                             if (window.UILogic && window.UILogic.actualizarBotonLote) {
                                 window.UILogic.actualizarBotonLote();
                             }
@@ -4111,7 +4116,7 @@
                         }
                     });
 
-                    // 2. Guardar estado de qué mes está abierto actualmente
+                    // 2. Guardar estado de mes abierto
                     const mesesExpandidos = new Set();
                     lista.querySelectorAll('.registro-mes-container').forEach(container => {
                         const detalle = container.querySelector('.registro-mes-detalle');
@@ -4138,16 +4143,14 @@
                     const hoy = obtenerFechaHoy();
                     const mesHoy = hoy.substring(0, 7);
 
-                    // (HEMOS ELIMINADO LA LÓGICA QUE DETECTABA EL MES NUEVO PARA EVITAR EL SALTO)
-
                     gruposPorMes.forEach((registrosDelMes, claveMes) => {
                         const grupos = agruparRegistrosConsecutivos(registrosDelMes);
 
-                        // Crear contenedor de mes
+                        // Contenedor Mes
                         const contenedorMesActual = document.createElement('div');
                         contenedorMesActual.className = 'registro-mes-container';
 
-                        // Header del mes
+                        // Header Mes
                         const headerMes = document.createElement('h3');
                         headerMes.className = 'registro-mes-header';
                         headerMes.dataset.mesId = claveMes;
@@ -4158,7 +4161,6 @@
                         chevron.style.width = '1.2em';
                         chevron.style.height = '1.2em';
                         chevron.style.verticalAlign = 'middle';
-
                         const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
                         use.setAttribute('href', '#icon-chevron-down');
                         chevron.appendChild(use);
@@ -4167,23 +4169,16 @@
                         headerMes.appendChild(chevron);
                         headerMes.appendChild(textoMes);
 
-                        // Contenedor detalle
+                        // Detalle Mes
                         const detalleMesActual = document.createElement('div');
                         detalleMesActual.className = 'registro-mes-detalle';
 
-                        // --- LÓGICA DE APERTURA SIMPLIFICADA (SIN SALTOS) ---
-                        // Solo miramos qué estaba abierto antes. No nos importa si hay un registro nuevo.
+                        // Lógica de apertura
                         let debeEstarExpandido = false;
-
-                        const estabaExpandido = mesesExpandidos.has(claveMes);
-                        const esMesActual = claveMes === mesHoy;
-
                         if (mesesExpandidos.size > 0) {
-                            // Si el usuario tenía algo abierto, respetamos ESO y nada más.
-                            debeEstarExpandido = estabaExpandido;
+                            debeEstarExpandido = mesesExpandidos.has(claveMes);
                         } else {
-                            // Si no había nada abierto (ej: primera carga), abrimos el mes actual.
-                            debeEstarExpandido = esMesActual;
+                            debeEstarExpandido = (claveMes === mesHoy);
                         }
 
                         if (debeEstarExpandido) {
@@ -4191,20 +4186,21 @@
                             chevron.style.transform = 'rotate(180deg)';
                         }
 
-                        // Renderizar items
+                        // --- BUCLE PRINCIPAL DE ITEMS ---
                         grupos.forEach(grupo => {
                             if (grupo.tipo === 'grupo') {
-                                const container = crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos);
+                                // CAMBIO CLAVE 3: ¡AQUÍ ESTABA EL ERROR! 
+                                // Asegúrate de que 'idNuevo' esté aquí como 4to parámetro
+                                const container = crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos, idNuevo);
                                 detalleMesActual.appendChild(container);
                             } else {
                                 const r = grupo.registros[0];
-                                // Pasamos idNuevo para que parpadee SI el mes está visible, pero sin forzar scroll
                                 const item = crearItemRegistroIndividual(r, horasDiarias, idNuevo);
                                 detalleMesActual.appendChild(item);
                             }
                         });
 
-                        // Evento Click (Mantenemos el fix del scroll suave MANUAL)
+                        // Evento Click del Mes
                         (function (header, detalle, chevronIcon, contenedor) {
                             header.onclick = (e) => {
                                 e.stopPropagation();
@@ -4214,7 +4210,6 @@
                                     detalle.classList.remove('expanded');
                                     chevronIcon.style.transform = 'rotate(0deg)';
                                 } else {
-                                    // Cerrar otros
                                     lista.querySelectorAll('.registro-mes-detalle.expanded').forEach(otroDetalle => {
                                         if (otroDetalle !== detalle) {
                                             otroDetalle.classList.remove('expanded');
@@ -4223,17 +4218,11 @@
                                             if (otroChevron) otroChevron.style.transform = 'rotate(0deg)';
                                         }
                                     });
-
-                                    // Abrir actual
                                     detalle.classList.add('expanded');
                                     chevronIcon.style.transform = 'rotate(180deg)';
 
-                                    // Scroll suave SOLO cuando el usuario hace click manualmente
                                     setTimeout(() => {
-                                        contenedor.scrollIntoView({
-                                            behavior: 'smooth',
-                                            block: 'start'
-                                        });
+                                        contenedor.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                     }, 310);
                                 }
                             };
@@ -4247,7 +4236,7 @@
                     lista.appendChild(fragmento);
                 }
 
-                function crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos = new Set()) {
+                function crearGrupoExpandible(grupo, horasDiarias, gruposExpandidos = new Set(), idResaltar = null) {
                     const primerReg = grupo.registros[0];
                     const ultimoReg = grupo.registros[grupo.registros.length - 1];
 
@@ -4256,7 +4245,28 @@
 
                     // Encabezado del grupo
                     const header = document.createElement('div');
-                    header.className = 'registro-item';
+
+                    // --- CAMBIO CLAVE 4: Lógica de detección de IDs nuevos ---
+                    let className = 'registro-item';
+                    let animarGrupo = false;
+
+                    if (idResaltar) {
+                        // Convertimos a array si no lo es, para buscar fácil
+                        const idsNuevos = Array.isArray(idResaltar) ? idResaltar : [idResaltar];
+
+                        // ¿Alguno de los registros de este grupo es nuevo?
+                        const contieneNuevo = grupo.registros.some(r => idsNuevos.includes(r.id));
+
+                        if (contieneNuevo) {
+                            animarGrupo = true;
+                        }
+                    }
+
+                    if (animarGrupo) {
+                        className += ' nuevo-registro-animacion';
+                    }
+                    header.className = className;
+                    // ---------------------------------------------------------
 
                     const info = document.createElement('div');
                     info.className = 'registro-info';
@@ -4283,7 +4293,6 @@
                     const listaExpandible = document.createElement('div');
                     listaExpandible.className = 'registro-grupo-detalle';
 
-                    // 🔑 Verificar si este grupo estaba expandido
                     const estabaExpandido = gruposExpandidos.has(rangoFechas);
                     listaExpandible.style.display = estabaExpandido ? 'block' : 'none';
                     totalEl.innerHTML = estabaExpandido ?
@@ -4291,7 +4300,8 @@
                         '<svg class="icon" style="width: 1em; height: 1em;"><use href="#icon-list"/></svg> Ver detalles';
 
                     grupo.registros.forEach(r => {
-                        const item = crearItemRegistroIndividual(r, horasDiarias);
+                        // IMPORTANTE: Pasamos null aquí para que los items internos NO destellen
+                        const item = crearItemRegistroIndividual(r, horasDiarias, null);
                         item.style.marginLeft = '1rem';
                         listaExpandible.appendChild(item);
                     });
@@ -6071,7 +6081,7 @@ Generado por Sistema de Horarios
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
                     iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles,
-                    actualizarBotonLote, obtenerNombreTipo, 
+                    actualizarBotonLote, obtenerNombreTipo,
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6106,11 +6116,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.54
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.55
     // ====================================================================
-    1) eliminacion de codigo en desuso
+    1) corregido destello en el item contenedor de dias especiales
 
 
-    
-ARREGLAR
     -->
