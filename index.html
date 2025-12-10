@@ -23,7 +23,7 @@
     <meta name="referrer" content="no-referrer">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
-    <title>Crono</title>
+    <title>Horarios</title>
     <style>
         :root {
             /* --- Variables de Color (Tema Claro) --- */
@@ -1204,7 +1204,7 @@
         </symbol>
     </svg>
     <div class="header">
-        <h1>Crono</h1>
+        <h1>Horarios</h1>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
             <button class="icon-btn" id="btn-install" style="display: none;" onclick="PWAInstaller.instalarApp()"
                 title="Instalar aplicación">
@@ -1813,7 +1813,7 @@
 
                 <br><br>
                 <p style="font-size: 0.8rem; text-align: center; opacity: 0.7;">
-                    Sistema Crono 2025
+                    Sistema Horarios 2025
                 </p>
             </div>
             <div class="btn-group">
@@ -3145,7 +3145,7 @@
                         const fechaHoy = new Date().toISOString().split('T')[0];
 
                         // Formato: horarios_NombrePerfil_2023-12-06.json
-                        a.download = `Crono_${nombreSafe}_${fechaHoy}.json`;
+                        a.download = `Horarios_${nombreSafe}_${fechaHoy}.json`;
                         // --------------------------------------------------
 
                         document.body.appendChild(a);
@@ -5079,7 +5079,7 @@ REPORTE DE HORAS TRABAJADAS
 
 ────────────────────────────────────────────────────────────────
 
-Generado por Sistema Crono
+Generado por Sistema Horarios
 `
                     };
 
@@ -5912,7 +5912,7 @@ Generado por Sistema Crono
                     // Primera actualización de UI
                     actualizarUI();
                     setInterval(() => actualizarUI(null, true), 60000);
-                    console.log('Sistema Crono iniciado correctamente');
+                    console.log('Sistema iniciado correctamente v6.29');
 
                     // Listeners para actualizar botón cuando cambien las fechas en modo lote
                     const loteDesde = document.getElementById('lote-fecha-desde');
@@ -6065,7 +6065,6 @@ Generado por Sistema Crono
     //             CAMBIOS REALIZADOS EN ESTA VERSION 6.59
     // ====================================================================
     1) Se agrega salida estimada en la tarjeta de estado
-    2) Se reemplaza el nombre
 
 
     -->
