@@ -1,13 +1,13 @@
 {
-  "name": "Horarios",
-  "short_name": "Horarios",
+  "name": "Crono",
+  "short_name": "Crono",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#1f2937",
   "orientation": "portrait",
   "scope": "./",
-  "id": "/horarios-app",
+  "id": "/Crono-app",
   "icons": [
     {
       "src": "icons/icon-192.png",
