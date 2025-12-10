@@ -380,7 +380,7 @@
 
         .btn-group {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem;
             margin-top: 0.75rem;
             align-items: center;
         }
@@ -907,8 +907,8 @@
         /* Botón de perfil en el Header */
         .header-profile-btn {
             background: transparent;
-            border: 2px solid var(--border);
-            border-radius: 20px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
             padding: 0.25rem 0.75rem;
             color: var(--text-main);
             font-size: 0.9rem;
@@ -1331,11 +1331,10 @@
                                 <label>Desde</label>
                                 <div class="input-with-btn">
                                     <input type="date" id="lote-fecha-desde" />
-                                    <button class="time-btn"
-                                        onclick="UILogic.limpiarCampo('lote-fecha-desde'); UILogic.actualizarBotonLote()"
-                                        title="Limpiar fecha">
+                                    <button class="time-btn" onclick="UILogic.alternarFechaActual('lote-fecha-desde')"
+                                        title="Pegar hoy / Limpiar">
                                         <svg class="icon">
-                                            <use href="#icon-broom" />
+                                            <use href="#icon-calendar-simple" />
                                         </svg>
                                     </button>
                                 </div>
@@ -1344,11 +1343,10 @@
                                 <label>Hasta</label>
                                 <div class="input-with-btn">
                                     <input type="date" id="lote-fecha-hasta" />
-                                    <button class="time-btn"
-                                        onclick="UILogic.limpiarCampo('lote-fecha-hasta'); UILogic.actualizarBotonLote()"
-                                        title="Limpiar fecha">
+                                    <button class="time-btn" onclick="UILogic.alternarFechaActual('lote-fecha-hasta')"
+                                        title="Pegar hoy / Limpiar">
                                         <svg class="icon">
-                                            <use href="#icon-broom" />
+                                            <use href="#icon-calendar-simple" />
                                         </svg>
                                     </button>
                                 </div>
@@ -1460,7 +1458,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.57</span>
+                <span class="version-text">v6.59</span>
             </h3>
 
             <div class="form-group">
@@ -4364,9 +4362,10 @@
                     const registros = D.registros();
                     const horasSemanales = D.horasSemanales();
                     const horasDiarias = D.horasDiarias();
-                    const diasHabilesConfig = D.diasHabiles(); // calcular si es fin de semana
+                    const diasHabilesConfig = D.diasHabiles();
                     const vistaActual = D.vistaActual();
 
+                    // Actualizar lista solo si no es un refresco de reloj
                     if (!soloReloj) {
                         actualizarListaRegistros(registros, idNuevo);
                     }
@@ -4374,11 +4373,10 @@
                     const { inicio: ini, fin: fn } = obtenerSemanaActual();
                     const hoy = obtenerFechaHoy();
 
-                    // --- 1. DETECTAR SI HOY ES DÍA DE DESCANSO ---
+                    // Detectar si hoy es día de descanso
                     const fechaHoyObj = new Date();
-                    const diaSemanaHoy = fechaHoyObj.getDay(); // 0 = Domingo, 6 = Sábado
+                    const diaSemanaHoy = fechaHoyObj.getDay(); // 0 = Domingo
                     let esDiaDeDescanso = false;
-
                     if (diaSemanaHoy === 0) {
                         esDiaDeDescanso = (diasHabilesConfig < 7);
                     } else {
@@ -4387,6 +4385,7 @@
 
                     const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
 
+                    // Elementos del DOM
                     const statsEl = $('stats-semana');
                     const progressEl = $('progress-bar');
                     const mensajeEl = $('stats-mensaje');
@@ -4394,33 +4393,33 @@
                     const hintEl = $('toggle-hint');
                     const bufferEl = $('stats-buffer');
 
+                    // --- 1. MOSTRAR BUFFER (EXTRAS/FALTANTES) ---
                     if (bufferEl) {
                         bufferEl.innerHTML = '';
-                        // Solo mostrar buffer si hay objetivo, no es 0 Y NO es día de descanso
-                        if (horasDiarias > 0 && bufferSemanal !== 0 && !esDiaDeDescanso) {
-                            if (Math.abs(bufferSemanal) > 0.01) {
-                                const esPositivo = bufferSemanal > 0;
-                                const bufferIcono = esPositivo ? '✅' : '⚠️';
-                                const bufferColor = esPositivo ? '#60ac94' : '#c05d76';
-                                const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
-                                const bufferLabel = esPositivo ? 'extras' : 'faltantes';
+                        if (horasDiarias > 0 && Math.abs(bufferSemanal) > 0.01 && !esDiaDeDescanso) {
+                            const esPositivo = bufferSemanal > 0;
+                            const bufferIcono = esPositivo ? '✅' : '⚠️';
+                            const bufferColor = esPositivo ? '#60ac94' : '#c05d76';
+                            const bufferTextoHoras = horasATexto(Math.abs(bufferSemanal));
+                            const bufferLabel = esPositivo ? 'extras' : 'faltantes';
 
-                                bufferEl.textContent = '';
-                                const span = document.createElement('span');
-                                span.style.color = bufferColor;
-                                span.style.fontWeight = '500';
-                                span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
-                                bufferEl.appendChild(span);
-                            }
+                            const span = document.createElement('span');
+                            span.style.color = bufferColor;
+                            span.style.fontWeight = '500';
+                            span.textContent = `${bufferIcono} ${bufferTextoHoras} ${bufferLabel} esta semana`;
+                            bufferEl.appendChild(span);
                         }
                     }
 
+                    // =========================================================
+                    // VISTA SEMANAL
+                    // =========================================================
                     if (vistaActual === 'semana') {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-calendar-simple" /></svg> Esta Semana`;
 
+                        // Calcular total trabajado en la semana (excluyendo días especiales)
                         const tot = registros.filter(r =>
-                            r.fecha >= ini &&
-                            r.fecha <= fn &&
+                            r.fecha >= ini && r.fecha <= fn &&
                             !(r.entrada === '00:00' && r.salida === '00:00') &&
                             !(r.entrada === '11:11' && r.salida === '11:11') &&
                             !(r.entrada === '22:22' && r.salida === '22:22')
@@ -4433,8 +4432,6 @@
                         if (statsEl) statsEl.innerHTML = `<div>${horasATexto(tot)}</div>`;
                         if (progressEl) {
                             progressEl.style.width = prog + '%';
-
-                            // Sin objetivo: color neutral
                             if (horasDiarias === 0) {
                                 setProgressBarColor(progressEl, 'blue');
                             } else {
@@ -4443,21 +4440,11 @@
                         }
 
                         if (mensajeEl) {
-                            // SIN OBJETIVO: Solo mostrar total
                             if (horasDiarias === 0) {
                                 mensajeEl.textContent = `Total registrado: ${horasATexto(tot)}`;
                                 mensajeEl.style.display = 'none';
                             } else {
                                 mensajeEl.style.display = 'block';
-                                const diaSemanaHoy = new Date().getDay();
-                                let esDiaDeDescanso = false;
-
-                                if (diaSemanaHoy === 0) {
-                                    esDiaDeDescanso = (diasHabilesConfig < 7);
-                                } else {
-                                    esDiaDeDescanso = (diaSemanaHoy > diasHabilesConfig);
-                                }
-
                                 if (objetivoAjustado === 0) {
                                     mensajeEl.textContent = `Semana sin objetivo. Total: ${horasATexto(tot)}`;
                                 } else if (esDiaDeDescanso) {
@@ -4473,6 +4460,9 @@
                         }
                         if (hintEl) hintEl.textContent = 'Toca para ver Hoy';
 
+                        // =========================================================
+                        // VISTA DIARIA (HOY)
+                        // =========================================================
                     } else {
                         tituloEl.innerHTML = `<svg class="icon"><use href="#icon-clock" /></svg> Hoy`;
                         const regHoy = registros.find(r => r.fecha === hoy);
@@ -4486,32 +4476,25 @@
 
                             if (isFeriadoHoy) {
                                 if (statsEl) statsEl.innerHTML = `<div>🥳 Feriado</div>`;
-                                if (progressEl) {
-                                    progressEl.style.width = '100%';
-                                    setProgressBarColor(progressEl, 'purple');
-                                }
+                                if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
                                 if (mensajeEl) mensajeEl.textContent = `¡Día no laboral!`;
 
                             } else if (isAusenciaHoy) {
                                 if (statsEl) statsEl.innerHTML = `<div>✈️ Ausencia</div>`;
-                                if (progressEl) {
-                                    progressEl.style.width = '100%';
-                                    setProgressBarColor(progressEl, 'purple');
-                                }
+                                if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
                                 if (mensajeEl) mensajeEl.textContent = `¡Día justificado!`;
 
                             } else if (isVacacionesHoy) {
                                 if (statsEl) statsEl.innerHTML = `<div>🏖️ Vacaciones</div>`;
-                                if (progressEl) {
-                                    progressEl.style.width = '100%';
-                                    setProgressBarColor(progressEl, 'purple');
-                                }
+                                if (progressEl) { progressEl.style.width = '100%'; setProgressBarColor(progressEl, 'purple'); }
                                 if (mensajeEl) mensajeEl.textContent = `¡Día de vacaciones!`;
 
                             } else {
+                                // --- DÍA NORMAL CON REGISTRO ---
                                 if (regHoy.salida) {
                                     tiempoTranscurrido = regHoy.total;
                                 } else {
+                                    // Calculando en tiempo real
                                     const ahora = new Date();
                                     const horaActual = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes()).padStart(2, '0');
                                     const t = D.calcularHoras(regHoy.entrada, horaActual, regHoy.tiempoFuera || null);
@@ -4527,12 +4510,10 @@
                                 }
 
                                 if (regHoy.salida) {
-                                    // DÍA COMPLETADO
+                                    // DÍA CERRADO
                                     if (objetivoDiario === 0) {
-                                        // Sin objetivo: color neutral
                                         setProgressBarColor(progressEl, 'blue');
-                                        if (mensajeEl) mensajeEl.textContent = `Total registrado: ${horasATexto(tiempoTranscurrido)}`;
-                                        mensajeEl.style.display = 'none'; // <--- NUEVO
+                                        if (mensajeEl) mensajeEl.style.display = 'none';
                                     } else {
                                         if (mensajeEl) mensajeEl.style.display = 'block';
                                         setProgressBarColor(progressEl, tiempoTranscurrido >= objetivoDiario ? 'green' : 'red');
@@ -4540,12 +4521,10 @@
                                         if (mensajeEl) mensajeEl.textContent = dif >= 0 ? `${horasATexto(dif)} extras` : `Faltaron ${horasATexto(Math.abs(dif))}`;
                                     }
                                 } else {
-                                    // DÍA EN CURSO
+                                    // DÍA EN CURSO (ABIERTO)
                                     if (objetivoDiario === 0) {
-                                        // Sin objetivo: solo mostrar total
                                         setProgressBarColor(progressEl, 'blue');
-                                        if (mensajeEl) mensajeEl.textContent = `Registrando tiempo...`;
-                                        mensajeEl.style.display = 'none';
+                                        if (mensajeEl) mensajeEl.style.display = 'none';
                                     } else {
                                         if (mensajeEl) mensajeEl.style.display = 'block';
                                         setProgressBarColor(progressEl, 'blue');
@@ -4553,26 +4532,19 @@
 
                                         if (mensajeEl) {
                                             if (tiempoTranscurrido >= objetivoDiario) {
-                                                // Ya cumplió el objetivo diario
-                                                const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
+                                                // Objetivo cumplido, chequear deuda semanal
                                                 const extraHoy = tiempoTranscurrido - objetivoDiario;
-
-                                                // Solo mostrar déficit si aún debe tiempo después de las horas extras de hoy
                                                 if (bufferSemanal < 0 && Math.abs(bufferSemanal) > extraHoy) {
                                                     mensajeEl.textContent = `Te podes ir, pero debés tiempo`;
                                                 } else {
                                                     mensajeEl.textContent = `Te podes ir`;
                                                 }
                                             } else {
-                                                // Aún no cumplió el objetivo diario
+                                                // Falta para el objetivo
                                                 const faltanteTexto = `Faltan ${horasATexto(faltante)}`;
-                                                const bufferSemanal = D.calcularBufferSemanal(ini, hoy);
-
-                                                // Si el buffer cubre lo que falta hoy
                                                 if (bufferSemanal >= faltante) {
                                                     mensajeEl.textContent = `${faltanteTexto}, pero te podés ir`;
                                                 } else {
-                                                    // Buffer insuficiente, negativo o en 0
                                                     mensajeEl.textContent = faltanteTexto;
                                                 }
                                             }
@@ -4581,22 +4553,71 @@
                                 }
                             }
                         } else {
-                            if (progressEl) {
-                                progressEl.style.width = '0%';
-                                setProgressBarColor(progressEl, 'blue');
-                            }
+                            // SIN REGISTRO HOY
+                            if (progressEl) { progressEl.style.width = '0%'; setProgressBarColor(progressEl, 'blue'); }
                             if (statsEl) statsEl.innerHTML = `<div style="font-size: 1.8rem;">😴 Sin actividad</div>`;
                             if (mensajeEl) {
-                                if (horasDiarias === 0) {
-                                    mensajeEl.style.display = 'none';
-                                } else {
-                                    mensajeEl.textContent = '...';
-                                    mensajeEl.style.display = 'block';
-                                }
+                                if (horasDiarias === 0) mensajeEl.style.display = 'none';
+                                else { mensajeEl.textContent = '...'; mensajeEl.style.display = 'block'; }
                             }
                         }
-                        if (hintEl) hintEl.textContent = 'Toca para ver la Semana';
+
+                        // --- LÓGICA DE SALIDA ESTIMADA (NUEVO) ---
+                        if (hintEl) {
+                            let mostrarEstimacion = false;
+                            let horaSalida = '';
+
+                            // Solo calcular si hay entrada, no hay salida, y hay un objetivo > 0
+                            if (regHoy && regHoy.entrada && !regHoy.salida && objetivoDiario > 0) {
+                                const esEspecial = (regHoy.entrada === '00:00' || regHoy.entrada === '11:11' || regHoy.entrada === '22:22');
+
+                                if (!esEspecial) {
+                                    // 1. Hora Entrada a minutos
+                                    const [hE, mE] = regHoy.entrada.split(':').map(Number);
+                                    let minutosTotal = (hE * 60) + mE;
+
+                                    // 2. Sumar Objetivo Diario
+                                    minutosTotal += (objetivoDiario * 60);
+
+                                    // 3. Sumar Tiempo Fuera ya registrado (estático)
+                                    if (regHoy.tiempoFuera) {
+                                        const [hF, mF] = regHoy.tiempoFuera.split(':').map(Number);
+                                        minutosTotal += (hF * 60) + mF;
+                                    }
+
+                                    // 4. Sumar Tiempo Fuera EN CURSO (Live Timer)
+                                    const perfilId = window.PerfilManager ? PerfilManager.obtenerPerfilActual() : 'default';
+                                    const storageKey = `breakStartTime_${perfilId}`;
+                                    const inicioBreak = localStorage.getItem(storageKey);
+
+                                    if (inicioBreak) {
+                                        const ahora = Date.now();
+                                        const minutosEnCurso = Math.floor((ahora - parseInt(inicioBreak)) / 60000);
+                                        if (minutosEnCurso > 0) minutosTotal += minutosEnCurso;
+                                    }
+
+                                    // 5. Formatear hora de salida
+                                    let hS = Math.floor(minutosTotal / 60);
+                                    const mS = Math.round(minutosTotal % 60);
+
+                                    if (hS >= 24) hS = hS % 24; // Ajuste si pasa de medianoche
+
+                                    horaSalida = `${String(hS).padStart(2, '0')}:${String(mS).padStart(2, '0')}`;
+                                    mostrarEstimacion = true;
+                                }
+                            }
+
+                            if (mostrarEstimacion) {
+                                hintEl.innerHTML = `Salida estimada: <strong>${horaSalida}</strong>`;
+                                hintEl.style.color = 'var(--text-muted)';
+                            } else {
+                                hintEl.textContent = 'Toca para ver la Semana';
+                                hintEl.style.color = 'var(--text-muted)';
+                            }
+                        }
                     }
+
+                    // Actualizar resto de componentes
                     actualizarEstadisticas();
                     actualizarEstadoBotonTimerMain();
                 }
@@ -5811,7 +5832,7 @@ Generado por Sistema de Horarios
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio,
                         abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard,
-                        abrirSelectorPerfiles, cerrarSelectorPerfiles,
+                        abrirSelectorPerfiles, cerrarSelectorPerfiles, alternarFechaActual
                     };
 
                     // =========================================================
@@ -5982,6 +6003,25 @@ Generado por Sistema de Horarios
                     });
                 }
 
+                // ... dentro de UILogic ...
+
+                function alternarFechaActual(id) {
+                    const c = document.getElementById(id);
+                    if (!c) return;
+
+                    // Si tiene datos, limpiar. Si está vacío, poner hoy.
+                    if (c.value.trim() !== '') {
+                        c.value = '';
+                    } else {
+                        c.value = obtenerFechaHoy();
+                    }
+
+                    // Importante: Actualizar el estado del botón principal
+                    actualizarBotonLote();
+                }
+
+                // ...
+
                 return {
                     init, obtenerFechaHoy, pegarHoraActual, alternarTema, alternarVista, mostrarConfig, cerrarConfig,
                     cerrarEdicion, mostrarImportar, cerrarImportar, actualizarUI, mostrarToast, mostrarError,
@@ -5992,7 +6032,7 @@ Generado por Sistema de Horarios
                     actualizarFeedbackConfig, poblarSelectorMeses, abrirSelectorPerfiles, actualizarBotonLote,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
-                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles
+                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles, alternarFechaActual
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6025,10 +6065,9 @@ Generado por Sistema de Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.57
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.59
     // ====================================================================
-    1) Se quitan lineas de codigo remanentes de funciones que fueron reemplazadas 
-       por versiones mejoradas
+    1) Se agrega salida estimada en la tarjeta de estado
 
 
     -->
