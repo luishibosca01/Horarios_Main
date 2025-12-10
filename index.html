@@ -1428,9 +1428,9 @@
                     <use href="#icon-chevron-down" />
                 </svg>
             </h2>
-            <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 1rem;">
+            <div class="form-collapsible" id="botones-historico" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
                 <div
-                    style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 1.5rem">
+                    style="display: flex; justify-content: flex-end; gap: 0.5rem; padding-right: 0.5rem; margin-top: 0.5rem">
                     <button class="filter-btn" id="btn-filtro" onclick="UILogic.mostrarFiltros()" title="Filtrar">
                         <svg class="icon">
                             <use href="#icon-filter" />
@@ -1460,7 +1460,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.56</span>
+                <span class="version-text">v6.57</span>
             </h3>
 
             <div class="form-group">
@@ -1492,9 +1492,7 @@
                 </div>
                 <div id="config-total-feedback" class="config-hint-text">(Total semanal: 35hs)</div>
             </div>
-
             <hr style="border: 0; border-top: 1px solid var(--border); margin: 1.5rem 0 1rem 0;">
-
             <div class="config-actions">
                 <button class="btn-export" onclick="DataManagement.exportarJSON()">
                     <svg class="icon">
@@ -2324,23 +2322,6 @@
 
                 function cargarDatosPerfilActual() { return perfiles[perfilActual]; }
 
-                function crearPerfil() {
-                    const input = document.getElementById('nombre-nuevo-perfil');
-                    if (!input) return;
-                    const nombre = S.sanitizeString(input.value.trim(), 30);
-                    if (!nombre) return;
-                    if (Object.keys(perfiles).length >= MAX_PERFILES) {
-                        if (window.UILogic) window.UILogic.mostrarToast('Máximo de perfiles alcanzado', 'error');
-                        return;
-                    }
-                    const id = 'perfil_' + Date.now();
-                    perfiles[id] = { nombre: nombre, registros: [], diasHabiles: 5, horasDiarias: 7 };
-                    guardarPerfiles();
-                    actualizarSelector();
-                    input.value = '';
-                    if (window.UILogic) window.UILogic.mostrarToast(`Perfil "${nombre}" creado`, 'success');
-                }
-
                 function actualizarSelector() {
                     // Actualiza el TEXTO del botón del header en lugar del select
                     const btnTexto = document.getElementById('nombre-perfil-header');
@@ -2371,54 +2352,13 @@
                     location.reload();
                 }
 
-                async function eliminarPerfilActual() {
-                    if (perfilActual === 'default') {
-                        if (window.UILogic) window.UILogic.mostrarToast('No se puede eliminar el perfil Principal', 'error');
-                        return;
-                    }
-
-                    const nombre = perfiles[perfilActual].nombre;
-                    const confirmacion = window.confirm(`¿Estás seguro de que quieres eliminar el perfil "${nombre}"?\n\nEsta acción NO se puede deshacer.`);
-
-                    if (!confirmacion) return;
-
-                    // Preguntar por Backup
-                    const deseaBackup = window.confirm(`Antes de eliminar "${nombre}":\n\n¿Deseas descargar una copia de seguridad de estos datos?`);
-
-                    if (deseaBackup) {
-                        // Usamos la función de exportar existente
-                        if (window.DataManagement) {
-                            window.DataManagement.exportarJSON();
-                            // Damos un pequeño tiempo para que inicie la descarga antes de borrar
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
-                    }
-
-                    delete perfiles[perfilActual];
-                    perfilActual = 'default';
-                    localStorage.setItem('perfilActivo', perfilActual);
-                    guardarPerfiles();
-                    location.reload();
-                }
-
                 function obtenerPerfilActual() { return perfilActual; }
+
                 function obtenerDatosPerfil() { return perfiles[perfilActual]; }
-                function renombrarPerfilActual() {
-                    const input = document.getElementById('nombre-perfil-actual');
-                    if (!input) return;
-                    const nuevo = S.sanitizeString(input.value.trim(), 30);
-                    if (!nuevo) return;
-                    perfiles[perfilActual].nombre = nuevo;
-                    guardarPerfiles();
-                    actualizarSelector();
-                    if (window.UILogic) window.UILogic.mostrarToast('Renombrado', 'success');
-                }
 
                 return {
-                    inicializar, cambiarPerfil, crearPerfil, eliminarPerfilActual,
-                    guardarDatosPerfilActual, cargarDatosPerfilActual,
-                    obtenerPerfilActual, obtenerDatosPerfil, renombrarPerfilActual,
-                    obtenerListaPerfiles
+                    inicializar, cambiarPerfil, guardarDatosPerfilActual, cargarDatosPerfilActual,
+                    obtenerPerfilActual, obtenerDatosPerfil, obtenerListaPerfiles
                 };
 
             })(SecurityAndUtils);
@@ -3666,19 +3606,6 @@
                     }
                 }
 
-                async function eliminarRegistro(id) {
-                    registros = registros.filter(r => r.id !== id);
-                    HistoryManager.saveState(registros);
-
-                    const result = await guardarYActualizar(); // Guardamos el resultado
-
-                    if (window.UILogic && window.UILogic.actualizarBotonLote) {
-                        window.UILogic.actualizarBotonLote();
-                    }
-
-                    return result; // Retornamos al final
-                }
-
                 return {
                     registros: () => registros,
                     horasSemanales: () => (horasDiarias * diasHabiles),
@@ -3711,7 +3638,6 @@
                     obtenerRegistrosFiltrados,
                     registrarVacacionesDirecto,
                     borrarPeriodoDirecto,
-                    eliminarRegistro,
                     registrarDiaEspecial,
                     undoAction: function () {
                         const prevState = HistoryManager.undo();
@@ -4432,11 +4358,6 @@
                     if (elFeriados) elFeriados.textContent = stats.feriados;
                     if (elAusencias) elAusencias.textContent = stats.ausencias;
                     if (elVacaciones) elVacaciones.textContent = stats.vacaciones;
-                }
-
-                function esFinDeSemana() {
-                    const d = new Date().getDay();
-                    return d === 0 || d === 6;
                 }
 
                 function actualizarUI(idNuevo = null, soloReloj = false) {
@@ -5786,16 +5707,6 @@ Generado por Sistema de Horarios
                     }
                 }
 
-                function obtenerNombreTipo(tipo) {
-                    const nombres = {
-                        'feriado': '🥳 Feriado',
-                        'ausencia': '✈️ Ausencia',
-                        'vacaciones': '🏖️ Vacaciones',
-                        'normal': '🕒 Normal'
-                    };
-                    return nombres[tipo] || tipo;
-                }
-
                 function actualizarBotonLote() {
                     const tipo = document.getElementById('lote-tipo').value;
                     const desde = document.getElementById('lote-fecha-desde').value;
@@ -5857,13 +5768,6 @@ Generado por Sistema de Horarios
                     }
                 }
 
-                // Función auxiliar necesaria si no la tienes (ponla dentro de UILogic o fuera)
-                function calcularDiferenciaDias(desde, hasta) {
-                    const d1 = new Date(desde);
-                    const d2 = new Date(hasta);
-                    return Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
-                }
-
                 async function init() {
                     if (typeof (Storage) === "undefined") {
                         alert("Tu navegador no soporta localStorage.");
@@ -5907,7 +5811,7 @@ Generado por Sistema de Horarios
                         init, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, eliminarPerfilDesdeEditor,
                         crearPerfilDesdeSelector, renderizarListaPerfiles, iniciarCambioHoras, iniciarCambioDias, detenerCambio,
                         abrirConfigDesdePerfiles, toggleModoLote, ejecutarAccionRegistro, registrarLoteDesdeCard,
-                        obtenerNombreTipo, calcularDiferenciaDias, abrirSelectorPerfiles, cerrarSelectorPerfiles,
+                        abrirSelectorPerfiles, cerrarSelectorPerfiles,
                     };
 
                     // =========================================================
@@ -6085,11 +5989,10 @@ Generado por Sistema de Horarios
                     limpiarCampo, mostrarFiltros, cerrarFiltros, mostrarAyuda, registrarLoteDesdeCard,
                     cerrarAyuda, cambiarMesStats, generarReporte, toggleBotonesHistorico, toggleStats, sumarMinutosAHora,
                     toggleTimerBreakMain, actualizarEstadoBotonTimerMain, toggleBloqueoEdicion, setBloqueoEdicion,
-                    actualizarFeedbackConfig, poblarSelectorMeses, abrirSelectorPerfiles, calcularDiferenciaDias,
+                    actualizarFeedbackConfig, poblarSelectorMeses, abrirSelectorPerfiles, actualizarBotonLote,
                     cerrarSelectorPerfiles, abrirEditorPerfil, cerrarEditorPerfil, guardarEdicionPerfil, toggleModoLote,
                     eliminarPerfilDesdeEditor, crearPerfilDesdeSelector, renderizarListaPerfiles, ejecutarAccionRegistro,
-                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles,
-                    actualizarBotonLote, obtenerNombreTipo,
+                    iniciarCambioHoras, iniciarCambioDias, detenerCambio, abrirConfigDesdePerfiles
                 };
 
             })(SecurityAndUtils, DataManagement);
@@ -6116,17 +6019,16 @@ Generado por Sistema de Horarios
                     .catch(err => console.error('❌ Error SW:', err));
             });
         }
-
     </script>
-
 </body>
 
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.56
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.57
     // ====================================================================
-    1) corregido boton timepo fuera que aparece subitamente al pasar 60 segundos
+    1) Se quitan lineas de codigo remanentes de funciones que fueron reemplazadas 
+       por versiones mejoradas
 
 
     -->
