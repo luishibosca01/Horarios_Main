@@ -133,6 +133,10 @@
             color: var(--text-main);
         }
 
+        .modal h3 .version-text {
+            margin-left: auto;
+        }
+
         .card h2.no-margin {
             margin-bottom: 0;
         }
@@ -891,7 +895,7 @@
         }
 
         .registro-mes-detalle.expanded {
-            max-height: 10000px;
+            max-height: 3500px;
             opacity: 1;
         }
 
@@ -1519,9 +1523,8 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.68</span>
+                <span class="version-text">v6.69</span>
             </h3>
-
             <div class="form-group">
                 <label>Horas diarias</label>
                 <div class="input-number-group">
@@ -2866,6 +2869,21 @@
                     let e = S.sanitizeString($('entrada').value.trim(), 5);
                     let s = S.sanitizeString($('salida').value.trim(), 5);
 
+                    // --- VALIDACIÓN DE FUTURO PARA NORMALES ---
+                    const hoy = UILogic.obtenerFechaHoy();
+                    if (f > hoy) {
+                        // Verificamos si es un registro especial (estos SÍ se permiten en el futuro)
+                        const esFeriado = e === '00:00' && s === '00:00';
+                        const esAusencia = e === '11:11' && s === '11:11';
+                        const esVacaciones = e === '22:22' && s === '22:22';
+
+                        if (!esFeriado && !esAusencia && !esVacaciones) {
+                            UILogic.resetearBoton(btn);
+                            UILogic.mostrarToast('Fecha futura no permitida en registro regular', 'warning');
+                            return;
+                        }
+                    }
+
                     const registroExistente = registros.find(r => r.fecha === f);
 
                     if (!e && !s) {
@@ -3079,7 +3097,7 @@
                     let tf = S.sanitizeString($('edit-tiempo-fuera').value.trim(), 5);
                     if (tf === '') tf = null;
 
-                    // --- BLOQUE NUEVO: CALCULAR CRÉDITO SEGÚN EL BOTÓN ---
+                    // --- CALCULAR CRÉDITO SEGÚN EL BOTÓN ---
                     let cr = null;
                     const btnCredito = document.getElementById('btn-toggle-credito');
 
@@ -3104,7 +3122,19 @@
                             // Si diferencia <= 0, significa que ya cumplió el horario, así que cr se queda en null
                         }
                     }
-                    // -----------------------------------------------------
+                    // --- VALIDACIÓN DE FUTURO PARA NORMALES ---
+                    const hoy = UILogic.obtenerFechaHoy();
+                    if (f > hoy) {
+                        const esFeriado = e === '00:00' && s === '00:00';
+                        const esAusencia = e === '11:11' && s === '11:11';
+                        const esVacaciones = e === '22:22' && s === '22:22';
+
+                        if (!esFeriado && !esAusencia && !esVacaciones) {
+                            UILogic.restaurarBotonGuardarEdicion(btnGuardar);
+                            UILogic.mostrarToast('Fecha futura no permitida en registro regular', 'warning');
+                            return;
+                        }
+                    }
 
                     // --- 2. DETECTAR SI HUBO CAMBIOS ---
                     const actualEntrada = r.entrada || '';
@@ -6443,8 +6473,9 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.68
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.69
     // ====================================================================
-    1) se añade "asueto" al reporte
+    1) se agrega validacion para los registros futuros, ahora no se puede crear un registro
+    con fecha mas alta que la actual, con excepcion de los registros especiales (feriados, etc)
 
     -->
