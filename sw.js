@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horarios-v6.1-cache'; // ✅ Incrementa esto en cada actualización
+const CACHE_NAME = 'horarios-v6.70-cache';
 const urlsToCache = [
   './',
   './index.html',
@@ -9,7 +9,6 @@ const urlsToCache = [
 
 // Instalación
 self.addEventListener('install', event => {
-  console.log('SW: Instalando nueva versión...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -20,12 +19,11 @@ self.addEventListener('install', event => {
         });
       })
   );
-  self.skipWaiting(); // ✅ Forzar activación inmediata
+  self.skipWaiting();
 });
 
 // Activación
 self.addEventListener('activate', event => {
-  console.log('SW: Activando nueva versión...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -36,11 +34,9 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    }).then(() => {
-      // ✅ Tomar control inmediato de todas las páginas
-      return self.clients.claim();
     })
   );
+  return self.clients.claim();
 });
 
 // Fetch
