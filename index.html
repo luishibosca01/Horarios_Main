@@ -310,7 +310,6 @@
         }
 
         /* Variantes de botones */
-        .btn-clean,
         .btn-delete {
             background: var(--c-red);
         }
@@ -1527,7 +1526,7 @@
                     </svg>
                     Configuración
                 </span>
-                <span class="version-text">v6.70</span>
+                <span class="version-text">v6.72</span>
             </h3>
             <div class="form-group">
                 <label>Horas diarias</label>
@@ -1766,7 +1765,7 @@
                         <use href="#icon-filter" />
                     </svg> Aplicar
                 </button>
-                <button class="btn-clean" onclick="DataManagement.limpiarFiltros()">
+                <button class="btn-delete" onclick="DataManagement.limpiarFiltros()">
                     <svg class="icon">
                         <use href="#icon-cancelar" />
                     </svg> Limpiar
@@ -3308,6 +3307,7 @@
                             localStorage.setItem('diasHabiles', JSON.stringify(diasHabiles));
                             localStorage.setItem('horasDiarias', horasDiarias);
                             localStorage.removeItem('horasSemanales');
+                            // ✅ NO tocamos 'temaOscuro' aquí
                         }
                     } catch (e) {
                         UILogic.mostrarToast('Error al guardar', 'error');
@@ -3570,10 +3570,19 @@
 
                     if (await guardarYActualizar()) {
                         try {
-                            localStorage.setItem('diasHabiles', diasHabiles);
-                            localStorage.setItem('horasDiarias', horasDiarias);
+                            // ❌ ESTO ESTABA MAL - Solo guardaba diasHabiles y horasDiarias
+                            // localStorage.setItem('diasHabiles', diasHabiles);
+                            // localStorage.setItem('horasDiarias', horasDiarias);
+
+                            const esPerfilDefault = window.PerfilManager && PerfilManager.obtenerPerfilActual() === 'default';
+
+                            if (esPerfilDefault) {
+                                // Solo guardamos diasHabiles y horasDiarias (NO el tema)
+                                localStorage.setItem('diasHabiles', JSON.stringify(diasHabiles));
+                                localStorage.setItem('horasDiarias', horasDiarias);
+                                // NO tocamos 'temaOscuro' aquí para preservar la preferencia del usuario
+                            }
                         } catch (ex) {
-                            // Manejo explícito de errores
                             console.error('Error guardando configuración:', ex);
                             UILogic.mostrarToast('Datos importados pero configuración no guardada', 'warning');
                         }
@@ -4962,12 +4971,17 @@
                 function alternarTema() {
                     let temaOscuro = !D.cargarConfiguracion().temaOscuro;
                     document.body.classList.toggle('dark-mode');
-                    try { localStorage.setItem('temaOscuro', temaOscuro); } catch (e) { }
 
+                    // ✅ Guardar en la raíz (NO dentro del perfil)
+                    try {
+                        localStorage.setItem('temaOscuro', temaOscuro);
+                    } catch (e) { }
+
+                    // Actualizar iconos de todos los botones
                     const botonesTema = [
-                        'theme-toggle',         // Botón del header (PC)
-                        'theme-toggle-modal',   // (Legacy, por si acaso)
-                        'btn-tema-selector'     // El botón en tu Selector de Perfiles
+                        'theme-toggle',
+                        'theme-toggle-modal',
+                        'btn-tema-selector'
                     ];
 
                     botonesTema.forEach(id => {
@@ -6473,19 +6487,62 @@ Generado por Sistema Horarios
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(registration => {
-                        console.log('SW registrado:', registration.scope);
+                        console.log('✅ SW registrado:', registration.scope);
+
+                        // Detectar actualizaciones
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
+
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // Lógica visual para avisar al usuario
-                                    if (window.UILogic) UILogic.mostrarToast('Nueva versión disponible. Recarga la página.', 'info');
+                                    mostrarCountdownYRecargar();
                                 }
                             });
                         });
+
+                        // Verificar si ya hay actualización esperando
+                        if (registration.waiting) {
+                            mostrarCountdownYRecargar();
+                        }
                     })
                     .catch(err => console.error('❌ Error SW:', err));
             });
+
+            // Listener para cuando el SW toma control
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('🔄 Nuevo SW activado, recargando...');
+                window.location.reload();
+            });
+        }
+
+        // ⏱️ Función de countdown y recarga automática
+        function mostrarCountdownYRecargar() {
+            let segundosRestantes = 5; // Ajusta el tiempo aquí (3, 5, 10, etc.)
+
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+
+            // Actualizar mensaje cada segundo
+            const intervalo = setInterval(() => {
+                segundosRestantes--;
+
+                if (segundosRestantes > 0) {
+                    toast.textContent = `🔄 Nueva versión disponible. Recargando en ${segundosRestantes}...`;
+                    toast.className = 'toast info show';
+                } else {
+                    clearInterval(intervalo);
+                    toast.textContent = '🔄 Actualizando...';
+
+                    // Recargar después de 500ms
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                }
+            }, 1000);
+
+            // Mostrar mensaje inicial
+            toast.textContent = `🔄 Nueva versión disponible. Recargando en ${segundosRestantes}...`;
+            toast.className = 'toast info show';
         }
     </script>
 </body>
@@ -6493,9 +6550,8 @@ Generado por Sistema Horarios
 </html>
 
 <!--// ====================================================================
-    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.70
+    //             CAMBIOS REALIZADOS EN ESTA VERSION 6.72
     // ====================================================================
-    1) se corrige nuevamente el salto al abrir modales
-    2) se corrige nuevamente el bloqueo de scroll al abrir modales
+    1) 
 
     -->
