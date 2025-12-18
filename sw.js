@@ -1,4 +1,4 @@
-const CACHE_NAME = 'horarios-v6.71-cache';
+const CACHE_NAME = 'horarios-v6.1-cache'; // ✅ Incrementa esto en cada actualización
 const urlsToCache = [
   './',
   './index.html',
@@ -7,38 +7,40 @@ const urlsToCache = [
   './icons/icon-512.png'
 ];
 
-// sw.js
-const CACHE_VERSION = 'v6.70'; // ✅ Incrementa esto en cada actualización
-
-self.addEventListener('install', (event) => {
-    console.log('SW: Instalando nueva versión...');
-    self.skipWaiting(); // ✅ Forzar activación inmediata
+// Instalación
+self.addEventListener('install', event => {
+  console.log('SW: Instalando nueva versión...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Abriendo cache');
+        return cache.addAll(urlsToCache).catch(err => {
+            console.error('CRÍTICO: Falló la carga de archivos en el install:', err);
+            throw err; 
+        });
+      })
+  );
+  self.skipWaiting(); // ✅ Forzar activación inmediata
 });
 
-self.addEventListener('activate', (event) => {
-    console.log('SW: Activando nueva versión...');
-    event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_VERSION) {
-                        console.log('SW: Eliminando caché antigua:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        }).then(() => {
-            return self.clients.claim();
+// Activación
+self.addEventListener('activate', event => {
+  console.log('SW: Activando nueva versión...');
+  event.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Borrando cache viejo:', cacheName);
+            return caches.delete(cacheName);
+          }
         })
-    );
-});
-
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
-        })
-    );
+      );
+    }).then(() => {
+      // ✅ Tomar control inmediato de todas las páginas
+      return self.clients.claim();
+    })
+  );
 });
 
 // Fetch
