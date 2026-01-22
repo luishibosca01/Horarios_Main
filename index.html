@@ -429,15 +429,9 @@
             margin: 0.5rem 0;
         }
 
-        /* Animación suave del contenido de stats-card */
+        /* Animación de contenido interno de stats-card */
         .stats-card-content {
-            transition: max-height 0.4s ease, opacity 0.3s ease;
-            max-height: 500px;
-            overflow: hidden;
-        }
-
-        .stats-card-content.transitioning {
-            opacity: 0.7;
+            transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
         .stats-card-content.fade-out {
@@ -5602,46 +5596,28 @@
                     const card = document.getElementById('stats-card');
                     const content = document.getElementById('stats-card-content');
 
-                    // 1. Iniciar transición del contenido
-                    if (content) {
-                        content.classList.add('transitioning');
+                    // 1. Iniciamos animación de la tarjeta Y del contenido
+                    if (card) card.classList.add('cambiando-vista');
+                    if (content) content.classList.add('fade-out');
 
-                        // Capturar altura actual antes del cambio
-                        const alturaActual = content.scrollHeight;
-                        content.style.maxHeight = alturaActual + 'px';
-                    }
-
-                    // 2. Delay para que se vea la animación de fade
+                    // 2. Delay para permitir que la animación se vea
                     setTimeout(() => {
-                        // Cambiar datos (mientras está semi-transparente)
+                        // Lógica original de cambio de datos
                         let vistaActual = D.vistaActual() === 'semana' ? 'diaria' : 'semana';
                         D.setVistaActual(vistaActual);
                         try {
                             localStorage.setItem('vistaActual', vistaActual);
                         } catch (e) { }
 
-                        actualizarUI(); // Actualiza el contenido
+                        actualizarUI(); // Se actualizan los textos (mientras está invisible)
 
-                        // 3. Calcular nueva altura y animar
-                        if (content) {
-                            // Forzar reflow para capturar nueva altura
-                            const nuevaAltura = content.scrollHeight;
+                        // 3. Removemos fade-out para que vuelva a aparecer
+                        if (content) content.classList.remove('fade-out');
 
-                            // Aplicar animación de altura
-                            requestAnimationFrame(() => {
-                                content.style.maxHeight = nuevaAltura + 'px';
+                        // 4. Terminamos la animación de la tarjeta
+                        if (card) card.classList.remove('cambiando-vista');
 
-                                // Remover transitioning para volver a opacidad 1
-                                setTimeout(() => {
-                                    content.classList.remove('transitioning');
-                                    // Resetear max-height después de la animación
-                                    setTimeout(() => {
-                                        content.style.maxHeight = '';
-                                    }, 400);
-                                }, 100);
-                            });
-                        }
-                    }, 150); // Sincronizado con la opacidad
+                    }, 300); // sincronizado con la transición CSS
                 }
 
                 function pegarHoraActual(id) {
